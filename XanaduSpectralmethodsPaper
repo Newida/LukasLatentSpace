@@ -1,0 +1,113 @@
+# Spectral Methods: Crucial for Machine Learning, Natural for Quantum Computers?
+
+In this post, I want to understand the paper  
+[*Spectral methods: crucial for machine learning, natural for quantum computers?*](https://arxiv.org/abs/2603.24654).
+
+The paper argues that spectral methods may provide a promising research direction for both quantum machine learning and classical machine learning. The goal here is to unpack the argument carefully, check what is actually true, and build enough background to work with these ideas seriously.
+
+We will start with the motivating example from the paper.
+
+## Smoothness for Models over Binary Data
+
+1. As usual, we begin with the problem setup.
+a)
+<a id="problem-1"></a>
+
+> **Problem 1: Learning to generate bitstrings.**  
+> Given a training set of bitstrings
+>
+> $$
+> x \in \{0,1\}^n
+> $$
+>
+> sampled from an unknown distribution $p(x)$, the goal is to generate new bitstrings from that same distribution.
+
+We will refer to this as [Problem 1](#problem-1).
+
+b) Why would this ever be interesting?
+
+One use case is **completing missing data**. Here the data are bitstrings, which is not as restrictive as it may first sound, since all digital data can ultimately be represented as bitstrings. However, the representation matters: Hamming distance between raw bitstrings is not always the right notion of semantic similarity.
+
+For example, suppose we only observe part of a data point,
+
+$$
+x = (1,0,?,?,1,?).
+$$
+
+If we have learned a good model of the full distribution $p(x)$, then we can sample plausible completions from the conditional distribution
+
+$$
+p(x_{\mathrm{missing}} \mid x_{\mathrm{observed}}).
+$$
+
+In other words, the learned distribution tells us which completions are likely, given the bits we have already observed.
+
+2. Now that we understand the task, let us look at the main challenge.
+
+a) A distribution over bitstrings
+
+$$
+\{0,1\}^n
+$$
+
+assigns one probability to each of the $2^n$ possible bitstrings. So, in the most general case, specifying the distribution requires knowing all values
+
+$$
+p(x), \qquad x \in \{0,1\}^n,
+$$
+
+subject to the normalization constraint
+
+$$
+\sum_{x \in \{0,1\}^n} p(x) = 1.
+$$
+
+Therefore, a completely unrestricted distribution has
+
+$$
+2^n - 1
+$$
+
+degrees of freedom.
+
+b) This is the core problem: if we only see $m$ training samples, then the data usually do not determine the true distribution. Many different distributions can explain the same finite sample set.
+
+For example, in the one-bit case, suppose the training data are
+
+$$
+X = \{0,0,0\}.
+$$
+
+One possible explanation is
+
+$$
+p(0) = 1, \qquad p(1) = 0.
+$$
+
+But another possible explanation is
+
+$$
+p(0) = 0.9, \qquad p(1) = 0.1.
+$$
+
+Under the second distribution, observing three zeros in a row has probability
+
+$$
+0.9^3 = 0.729,
+$$
+
+so the data do not rule it out. We may simply have been unlucky and not observed a $1$ in the training set.
+
+3. Therefore, to learn anything useful, we need additional assumptions. One useful assumption is that the distribution we are looking for is **smooth**.
+
+a) Informally, smoothness says that nearby inputs should usually have nearby probabilities.
+
+This is often a reasonable inductive bias. Small changes in an image, sentence embedding or sensor reading usually should not completely change the correct prediction. In a generative setting, smoothness can help generalization because it means that the model spreads probability mass to related unseen samples rather than placing all probability only on the samples seen during training.
+
+Smoothness can also help with robustness: if a model is smooth, then small perturbations of the input should not cause huge changes in the output probability.
+
+b) Why might this assumption be wrong?
+
+It can fail whenever the target distribution is not smooth with respect to the chosen notion of closeness. This can happen when the data contain hard constraints, rare events, sharp spikes, anomalies or discontinuities. In such cases, smoothing may erase exactly the structure we care about.
+
+For example, consider checksums. A string may be valid only if its checksum matches. Flipping a single bit can turn a valid string into an invalid one. So two bitstrings that are very close in Hamming distance may have completely different probabilities under the true distribution. In that case, blindly imposing smoothness would be the wrong bias.
