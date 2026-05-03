@@ -147,6 +147,17 @@ $$
 $$
 
 We call p smooth if $\Epsilon(p)$ is small.
+
+4. Ok let's get to it. Assume we have some training data $\Chi$, we want to find a model $p_\theta(x)$ which describes our data and is smooth.
+
+Our objective function is therefore:
+$$
+\max_{p} \Prod_{x \in \Chi} p(x) - \lambda \Epsilon(p) = \max_{p} \sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)
+$$
+
+$\sum_{x \in \Chi} log p(x)$ is the part that maximizes the probability of seeing our training data. We use log to have better numerical stability.
+$\lambda \Epsilon(p)$ is the regularizer. This term adds our smoothness constraint and $\lambda$ controlls how important this term is in relation to the pervious one.
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
