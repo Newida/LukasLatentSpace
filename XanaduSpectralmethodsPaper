@@ -106,11 +106,23 @@ This is often a reasonable inductive bias. Small changes in an image, sentence e
 
 Smoothness can also help with robustness: if a model is smooth, then small perturbations of the input should not cause huge changes in the output probability.
 
+Here is an ascii image of a smooth distribution:
+
+p(x)
+ ^
+ |                 .-''''-.
+ |              .-'        '-.
+ |            .'              '.
+ |          .'                  '.
+ |        .'                      '.
+ |_____.-'__________________________'-.____> x
+
 b) Why might this assumption be wrong?
 
 It can fail whenever the target distribution is not smooth with respect to the chosen notion of closeness. This can happen when the data contain hard constraints, rare events, sharp spikes, anomalies or discontinuities. In such cases, smoothing may erase exactly the structure we care about.
 
 For example, consider checksums. A string may be valid only if its checksum matches. Flipping a single bit can turn a valid string into an invalid one. So two bitstrings that are very close in Hamming distance may have completely different probabilities under the true distribution. In that case, blindly imposing smoothness would be the wrong bias.
+
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
