@@ -123,7 +123,30 @@ It can fail whenever the target distribution is not smooth with respect to the c
 
 For example, consider checksums. A string may be valid only if its checksum matches. Flipping a single bit can turn a valid string into an invalid one. So two bitstrings that are very close in Hamming distance may have completely different probabilities under the true distribution. In that case, blindly imposing smoothness would be the wrong bias.
 
+Here is an ascii image of a non-smooth distribution (Triangular distribution, not smooth at x=1, because it has a sharp corner):
 
+p(x)
+ ^
+ |        /\
+ |       /  \
+ |______/    \______
+       0  1   2      x  
+
+Now we have some idea of what smoothness means.
+
+In our case, distributions over bitstrings, there also exist a defintion of smoothness. Intuitively, if only a few number of bits are flipped in the input then the value of the distribution should not change drastically.
+
+Let put these ideas into math. Let x be a bitstring $x \in \{0, 1\}^n$ and $e_i$ be the bitstring with all $0$ except for bit $i$, which is $1$. $e_i = (0, ..., 0, 1, 0, ..., 0)$. Flipping the $i$-th bit of x is written as $x \oplus e_i$.
+
+Then given our intuition $p(x) - p(x \oplus e_i)$ should be small. This differnece can be seen as the discret derivative of $p(x)$: $\nabla_i p(x) = p(x) - p(x \oplus e_i)$. Now, one such derivative only measures how much the distribution changes at one point $x$ in one direction $i$.
+
+We want this everywhere. For every point in every direction. Therefore, let us define the total squared discrete gradient:
+
+$$
+\Epsilon(p) = \sum_{x \in \{0, 1\}^n} \sum_{i = 1}^n (p(x) - p(x \oplus e_i))^2
+$$
+
+We call p smooth if $\Epsilon(p)$ is small.
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
