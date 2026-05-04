@@ -171,6 +171,11 @@ As it turns out this actually works. You can find the corresponding experiment i
 
 Now the big question for me is? Why do they apply Fourier Transform? Is it just for the sake of using it? Or is there more to it?
 
+After a quick discussion with ChatGPT it told me that I did very "ML thinking": data -> model -> loss -> optimizer.
+But instead I should have take the perspective of Signal processing applying a so called Low pass filter: data -> basis transform -> modify coefficients -> inverse transform.
+
+So we will do it all again but using this new perspective.
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
