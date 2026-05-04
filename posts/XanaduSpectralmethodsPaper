@@ -163,8 +163,13 @@ We added a minus sign such that we deal with a more common minimization problem 
 
 1. The first thing we check is wether the function is convex/concave. This would give us a guarantee that if we find a maximum it is also a global maximum.
 
-Ask your favourite LLM to prove to you that our objective function is indeed convex and that $p(x) \geq 0 $, $\sum_{x} p(x) = 1$ is a convex set.
+2. Ask your favourite LLM to prove to you that our objective function is indeed convex and that $p(x) \geq 0 $, $\sum_{x} p(x) = 1$ is a convex set.
 We find that we have a convex optmiziation problem over a convex set!
+
+3. Naive as I am, knowing nothing about Fourier transforms. I would have applied the Frank-Wolfe algorithm starting from $p_x = 1/2^n$, $\forall x$ and hoping the algorithm would never set $p_x = 0$ to not get $log(0) = - \inf$ at some point.
+As it turns out this actually works. You can find the corresponding experiment in as a notebook in the experiments section.
+
+Now the big question for me is? Why do they apply Fourier Transform? Is it just for the sake of using it? Or is there more to it?
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
