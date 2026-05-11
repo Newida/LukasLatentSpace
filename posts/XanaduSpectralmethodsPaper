@@ -166,15 +166,41 @@ We added a minus sign such that we deal with a more common minimization problem 
 2. Ask your favourite LLM to prove to you that our objective function is indeed convex and that $p(x) \geq 0 $, $\sum_{x} p(x) = 1$ is a convex set.
 We find that we have a convex optmiziation problem over a convex set!
 
-3. Naive as I am, knowing nothing about Fourier transforms. I would have applied the Frank-Wolfe algorithm starting from $p_x = 1/2^n$, $\forall x$ and hoping the algorithm would never set $p_x = 0$ to not get $log(0) = - \inf$ at some point.
+3. Naive as I am, knowing nothing about Fourier transforms. I would have applied the Frank-Wolfe (FW) algorithm starting from $p_x = 1/2^n$, $\forall x$ and hoping the algorithm would never set $p_x = 0$ to not get $log(0) = - \inf$ at some point.
 As it turns out this actually works. You can find the corresponding experiment in as a notebook in the experiments section.
 
-Now the big question for me is? Why do they apply Fourier Transform? Is it just for the sake of using it? Or is there more to it?
+First, we will give a short recap of how the Frank-Wolfe (FW) algorithm works: The FW algorithm can be used if we have a convex optimization problem over a convex set (this is true in our case).
+It is a gradient based method that naturally ensures that our current solution always stays inside the convex feasible set. So in our case it always ensures that we have $\sum_x p(x) = 1$ and $p(x) \geq 0$.
+In each step we calculate the gradient of our objective function $-[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)]$, but then we cannot directly step into the direction of the gradient because this would leave the feasible set of solutions.
+Ok, but if we cannot just follow the gradient, then where should we go?
 
-After a quick discussion with ChatGPT it told me that I did very "ML thinking": data -> model -> loss -> optimizer.
-But instead I should have take the perspective of Signal processing applying a so called Low pass filter: data -> basis transform -> modify coefficients -> inverse transform.
+Assume we have n = 3, i.e. our input are 3 bit bitstrings, we can easily see that the vertices of our feasible set is given by the points/distriutions:
+(0, 0, 0, 0, 0, 0, 0, 0) [distribution: p(000) = 1, 0 for all others), (0, 0, 0, 0, 0, 0, 0, 1) [distribution: p(001) = 1, 0 for all others], (0, 0, 0, 0, 0, 1, 0, 0) [...], ...
+Every point inside is a valid distribution:
+             p = (p_0, p_1, p_2, ..., p_7),
+             p_i >= 0,
+             p_1 * (0, 0, 0, 0, 0, 0, 0, 0) + p_1 * (0, 0, 0, 0, 0, 1, 0, 0) + p_2 * (0, 0, 0, 0, 0, 1, 0, 0) + ... = 1.
+Well because every point inside is a valid distribution, every probability distribution can be interpreted as a weighted combination of these vertices.
 
-So we will do it all again but using this new perspective.
+At iteration \(t\), we already have some current distribution \(p_t\). The gradient tells us how sensitive the objective is to increasing or decreasing probability mass at each bitstring \(x\).
+So therefore we move into the direction of the vertex with the smallest gradient value (minimizing the objective function),
+$$
+p^\star = \arg\min_p \nabla -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)].
+$$
+The corresponding vertex \(e_{x^\star}\) is therefore the pure distribution that currently looks most beneficial.
+FW then takes a step towards this vertex, while keeping the constraints alive:
+$$
+p_{t+1} = (1-\gamma_t)p_t + \gamma_t e_{p^\star}.
+$$
+
+Geometrically, FW behaves a bit like repeatedly pulling the current distribution toward whichever corner of the simplex currently looks most attractive according to the gradient information.
+
+Ok now in times of Deep-Learning and scaling laws, we really need to think about scaling this problem and see how well our approach would perform:
+1. p is given as a full probability distribution, so that needs O($2^n$) memory.
+2. FW calculates the gradient in each step, that takes O$(n2^n$) time.
+3. Calculating $p^\star$ takes O(2^n) as we need to check every entry in the $2^n$ gradient vector.
+4. Taking T many iterations of this hence costs a total of O($n2^n \cdot T$).
+
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
