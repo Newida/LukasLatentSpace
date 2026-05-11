@@ -201,6 +201,11 @@ Ok now in times of Deep-Learning and scaling laws, we really need to think about
 3. Calculating $p^\star$ takes O(2^n) as we need to check every entry in the $2^n$ gradient vector.
 4. Taking T many iterations of this hence costs a total of O($n2^n \cdot T$).
 
+How many steps T do should we take?
+Frank-Wolfe has a standard sublinear convergence rate, i.e. $f(p_T) - f(p^\ast) = O(\frac{1}{T})$, where $f$ is the objective function and $p_T$ is our solution at time step T in the FW algorithm and $p^\ast$ is the optimal solution.
+One thing we also have to be aware of is the step size $\gamma_t$. Because our objective function contains log(.), we must avoid log(0) at any point.
+So as long as we stay in the interior of our solution set and never directly step towards a vertex, i.e. $\gamma_t = 1$, so if we keep $\gamma_t < 1$ we will be fine.
+The textbook step rate is $\gamma_t = \frac{2}{2 + t}$, which in our case is a problem, if $t = 0$, because then $\gamma_t = \frac{2}{2} = 1$, so instead we just awkwardly start the algorithm at t = 1.
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
