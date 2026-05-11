@@ -207,6 +207,9 @@ One thing we also have to be aware of is the step size $\gamma_t$. Because our o
 So as long as we stay in the interior of our solution set and never directly step towards a vertex, i.e. $\gamma_t = 1$, so if we keep $\gamma_t < 1$ we will be fine.
 The textbook step rate is $\gamma_t = \frac{2}{2 + t}$, which in our case is a problem, if $t = 0$, because then $\gamma_t = \frac{2}{2} = 1$, so instead we just awkwardly start the algorithm at t = 1.
 
+What can we do about this?
+
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
