@@ -185,7 +185,7 @@ Well because every point inside is a valid distribution, every probability distr
 At iteration \(t\), we already have some current distribution \(p_t\). The gradient tells us how sensitive the objective is to increasing or decreasing probability mass at each bitstring \(x\).
 So therefore we move into the direction of the vertex with the smallest gradient value (minimizing the objective function),
 $$
-p^\star = \arg\min_p \nabla -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)].
+\(e_{x^\star}\) = \arg\min_p \nabla -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)].
 $$
 The corresponding vertex \(e_{x^\star}\) is therefore the pure distribution that currently looks most beneficial.
 FW then takes a step towards this vertex, while keeping the constraints alive:
@@ -207,9 +207,18 @@ One thing we also have to be aware of is the step size $\gamma_t$. Because our o
 So as long as we stay in the interior of our solution set and never directly step towards a vertex, i.e. $\gamma_t = 1$, so if we keep $\gamma_t < 1$ we will be fine.
 The textbook step rate is $\gamma_t = \frac{2}{2 + t}$, which in our case is a problem, if $t = 0$, because then $\gamma_t = \frac{2}{2} = 1$, so instead we just awkwardly start the algorithm at t = 1.
 
-What can we do about this?
+What can we do about this? (We present here the idea of fully corrective FW)
 
-
+One simple thing we can do is to keep track only of non-zero probabilities instead of the full $2^n$ vector at all times.
+We define an active set $S_t$ containing all active vertices at time $t$.
+Initially $S_0 = {x | x \in \Chi}$, i.e. all samples we observe have non-zero probability.
+Then in each step to calculate the gradients for $\Epsilon(p)$, we need all $n$ neighboring samples. We call this set $C_t = S_t \cup {x \oplus e_i, i = 1, ..., n\}$.
+We calculate the gradient over this set and choose the best new vertex:
+$$
+           x_t = argmin_{x \in C_t} \nabla -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)]_x
+$$
+Add $x_t$ into the to active set $S_{t+1} = S_t ∪ {x_t}$, if it is not already inside.
+...
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
