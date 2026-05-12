@@ -175,11 +175,11 @@ In each step we calculate the gradient of our objective function $-[\sum_{x \in 
 Ok, but if we cannot just follow the gradient, then where should we go?
 
 Assume we have n = 3, i.e. our input are 3 bit bitstrings, we can easily see that the vertices of our feasible set is given by the points/distriutions:
-(0, 0, 0, 0, 0, 0, 0, 0) [distribution: p(000) = 1, 0 for all others), (0, 0, 0, 0, 0, 0, 0, 1) [distribution: p(001) = 1, 0 for all others], (0, 0, 0, 0, 0, 1, 0, 0) [...], ...
+(1, 0, 0, 0, 0, 0, 0, 0) [distribution: p(000) = 1, 0 for all others), (0, 1, 0, 0, 0, 0, 0, 0) [distribution: p(001) = 1, 0 for all others], (0, 0, 1, 0, 0, 0, 0, 0) [...], ...
 Every point inside is a valid distribution:
              p = (p_0, p_1, p_2, ..., p_7),
              p_i >= 0,
-             p_1 * (0, 0, 0, 0, 0, 0, 0, 0) + p_1 * (0, 0, 0, 0, 0, 1, 0, 0) + p_2 * (0, 0, 0, 0, 0, 1, 0, 0) + ... = 1.
+             p_1 * (1, 0, 0, 0, 0, 0, 0, 0) + p_1 * (0, 1, 0, 0, 0, 0, 0, 0) + p_2 * (0, 0, 1, 0, 0, 0, 0, 0) + ... = 1.
 Well because every point inside is a valid distribution, every probability distribution can be interpreted as a weighted combination of these vertices.
 
 At iteration \(t\), we already have some current distribution \(p_t\). The gradient tells us how sensitive the objective is to increasing or decreasing probability mass at each bitstring \(x\).
