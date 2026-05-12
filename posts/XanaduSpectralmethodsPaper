@@ -1,4 +1,4 @@
-# Spectral Methods: Crucial for Machine Learning, Natural for Quantum Computers?
++# Spectral Methods: Crucial for Machine Learning, Natural for Quantum Computers?
 
 In this post, I want to understand the paper  
 [*Spectral methods: crucial for machine learning, natural for quantum computers?*](https://arxiv.org/abs/2603.24654).
@@ -218,7 +218,26 @@ $$
            x_t = argmin_{x \in C_t} \nabla -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)]_x
 $$
 Add $x_t$ into the to active set $S_{t+1} = S_t ∪ {x_t}$, if it is not already inside.
-...
+We call this set the support set. Now this gives us that we do not need the entire $2^n$ set of all vertices, but a samller set over which to optimize.
+To find the support set we use the same strategy as the FW algorithm. We call this the Outer-FW.
+Given a support set our problem is now: 
+$$
+argmin_{p \in \triangle(S_{t+1})} -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)].
+$$
+This problem is again a convex objective function over a convex set.
+Here we can use an inner FW algorithm to solve for this problem:
+for r = 1, ..., R
+     calculate the gradient g_r restricted to \triangle(S_{t+1}) of -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)]
+     x_r = min g_r
+     p_r = (1 - \gamma_r)p_r + \gamma_r x_r
+
+So in total we have two FW loops now:
+for t = 1, ..., T:
+    # Discover new support set
+    ...
+    for r = 1, ..., R:
+       # Solve problem restricted to the current support set
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
