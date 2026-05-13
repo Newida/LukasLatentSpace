@@ -310,6 +310,17 @@ In hindsight, you could have probably also figured this out purely by analyzing 
 To keep the support set small, we can also prune values $x_t$ and remove them from $S_{t}$ if they fall below a threshold value.
 
 However, we ensure that the probability of samples from the training data never gets put to 0, because we can assume this probability to be sufficiently high otherwise we would have not seen this sample.
+
+Ok now given this insight of what the algorithm is actually doing, i.e. smoothing the empirical distribution, we actually get back directly to the method presented in the Spectral Methods Paper we are actually trying to understand.
+
+After talking a bit with ChatGPT, it explained to me that the idea of smoothing the empirical distribution originally comes from signal processing.
+
+What I did so far was very typical for someone who does machine learning:
+Data -> Model -> Objective function -> optimizer
+
+However, one could have also tried the signal processing pipeline:
+Data -> Transform -> Maniupate transformed data -> Inverse transform.
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
