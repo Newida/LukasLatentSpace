@@ -3,3 +3,13 @@ This is a public notebook for my research, technical work and evolving understan
 
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
+
+## Notebook HTML exports
+
+LLMs and other agents are welcome to translate the notebooks in `experiments/` into static HTML using the repository script:
+
+```bash
+./.venv/bin/python scripts/export_experiment_notebooks_to_html.py
+```
+
+The generated files are written to `experiments_html/`.
