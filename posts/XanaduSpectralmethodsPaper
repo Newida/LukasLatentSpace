@@ -238,8 +238,78 @@ for t = 1, ..., T:
     for r = 1, ..., R:
        # Solve problem restricted to the current support set
 
+Now here is an important detail that we only noticed empirically after playing with the notebook in experiments directory.
+I first changed T and R and looked at what happened for the n = 20 experiment.
+The surprising observation was:
+
+1. Increasing T did not really discover many more useful vertices.
+2. Increasing R did improve the objective.
+3. Even when the support set did not change, changing how we split the same total amount of inner work into T and R could change the final distribution.
+
+This last point felt wrong. If the support set does not change, then the outer loop is not doing support discovery anymore.
+It is just asking the inner FW algorithm to do the exact same optimization it did in the previous iteration again.
+That behavior is basically useless.
+
+So should we stop then and just return convergence?
+That felt like it's too cheap of an idea and indeed we can also just instead of restarting the same optimization, continue it instead. This would improve the solution quality of the current optimization and also give the outer loop the change of finding a different vertex instead. This basically say "Oh you didn't find any better vertex? Then let me refine the inner loop optimization and try again".
+
+From this idea, we can do the following experiment to test if it really works like we think it should:
+
+If the support set stays fixed, then
+$$
+T = x,\ R = y
+$$
+should behave like
+$$
+T = 1,\ R = xy.
+$$
+Both are just xy inner FW steps on the same restricted problem.
+If these two are different, then T is not only a support discovery parameter anymore.
+It also secretly changes the optimization dynamics.
+
+You can find this also in the experiments directory as the test_n20_support_equivalence.py file.
+
+However, our new algorithm looks like this:
+for t = 1, ..., T:
+    # Outer FW: discover new support
+    C_t = S_t ∪ {x ⊕ e_i | x ∈ S_t, i = 1, ..., n}
+    x_t = argmin_{x ∈ C_t} gradient_x
+    S_t = S_t ∪ {x_t}
+
+    # Inner FW: continue optimizing on the current support
+    for j = 1, ..., R:
+        calculate the gradient g restricted to triangle(S_t)
+        x_r = argmin_{x ∈ S_t} g_x
+        gamma = 2 / (2 + r_global)
+        p = (1 - gamma)p + gamma e_{x_r}
+        r_global = r_global + 1
+
+The important difference is that $r_{global}$ is not reset when t changes.
+Therefore, if the support set does not change, then T = x, R = y is the same optimization path as T = 1, R = xy.
+
+This also explains why, in our setting, a low T and a high R is the more natural choice.
+The objective has two forces:
+
+1. The MLE term wants to put probability mass on the observed samples.
+2. The smoothness term wants neighboring bitstrings to have similar probabilities.
+
+As long as the smoothing term does not outweigh the MLE term, the solution should mostly look like a smoothed empirical distribution.
+That means we should not expect the algorithm to need many vertices far away from the data.
+The observed samples already have direct likelihood reward.
+Their one-hop neighbors can reduce sharp Hamming-edge jumps.
+But a far away unobserved vertex has no likelihood reward, and giving it mass means taking mass away from observed samples, which hurts the MLE part.
+
+So in this regime the support set is unlikely to grow much beyond the observed points and a few useful neighbors.
+The useful work is therefore not mainly discovering lots of new vertices.
+The useful work is re-optimizing the probabilities on this almost fixed support set.
+That is why empirically a small outer budget T and a large inner budget R worked better.
+If $\lambda$ were made much larger, this could change: then the smoothness term could dominate and force probability mass much farther away from the empirical support.
+
+In hindsight, you could have probably also figured this out purely by analyzing the hyperparameters in our setting.
+
 To keep the support set small, we can also prune values $x_t$ and remove them from $S_{t}$ if they fall below a threshold value.
-However we ensure that the probability of samples from the training data never gets put to 0, because we can assume this probability to be sufficiently high otherwise we would have not seen this sample.
+
+However, we ensure that the probability of samples from the training data never gets put to 0, because we can assume this probability to be sufficiently high otherwise we would have not seen this sample.
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
