@@ -318,8 +318,40 @@ After talking a bit with ChatGPT, it explained to me that the idea of smoothing 
 What I did so far was very typical for someone who does machine learning:
 Data -> Model -> Objective function -> optimizer
 
-However, one could have also tried the signal processing pipeline:
+However, in the end when scaling the problem it turned out that we did:
+Data -> empirical model -> smoothing. 
+
+This can be generalized and is usually done in signal processing:
 Data -> Transform -> Maniupate transformed data -> Inverse transform.
+
+From this point of view the problems looks a little bit different.
+The data we are given can be interpreted as a signal, e.g. the dataset $\mathcal{X} = \{000, 001, 000, 111\}$
+is given by the signal:
+count
+ ^
+ 2|______
+ 1|      |______        ______
+ 0|_____________|______|__________________> x
+   000     001     010     111
+where we just interpreted the count of the number as the singals strength and gave the numbers an order.
+This signal has a corresponding probability distribution:
+p(000) = 2/4, p(001) = 1/4, p(010) = 0, p(111) = 1/4
+This is called the empirical distribution.
+We used this distribution as the starting point in the scalable variant of the FW algorithm, because it only gives probabilities to observed items and everything else is left as 0 and it also minimizes the first MLE part from our objective funcion $-[\sum_{x \in \Chi} log p(x)$.
+Now we have a direct connection between data <-> signal <-> probability distribution.
+
+In signal processing now the interpretation of the data as a signal is this:
+The signal we are given is the true signal + some noise. This noise can come from whatever source. 
+In our case the main source of noise is that we only have a finite number of samples and we do not observe all $2^n$ possible states.
+
+Our goal now is to filter our the noise from the true signal.
+Here again we make the same assumption as before, that our original signal is supposed to be smooth. This means "more smooth" = "less noisy" and "less smooth" = "more noisy".
+We measure the smoothness again by $\Epsilon(p)$.
+We now also interprete $\Epsilon(p)$ as a function that tells us how noisy the signal $p$ is.
+
+Ok now that we have this in place, our goal is to filter out the noise from the given signal to find the original ideal one.
+The noisy signal is given by the empirical distribution.
+Now the question is, if we want to follow the signal processing pipeline, we need to figure out a transformation, that lets us easily manipulate the data such to reduce noise.
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
