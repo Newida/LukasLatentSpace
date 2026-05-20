@@ -152,6 +152,7 @@ We call p smooth if $\Epsilon(p)$ is small.
 
 Our objective function is therefore:
 $$
+<a id="objective-1"></a>
 \min_{p} -[\sum_{x \in \Chi} log p(x) - \lambda \Epsilon(p)]
 $$
 s.t. $p(x) \geq 0 $, $\sum_{x} p(x) = 1$
@@ -350,8 +351,14 @@ We measure the smoothness again by $\Epsilon(p)$.
 We now also interprete $\Epsilon(p)$ as a function that tells us how noisy the signal $p$ is.
 
 Ok now that we have this in place, our goal is to filter out the noise from the given signal to find the original ideal one.
-As explained, the noisy signal is given by the empirical distribution.
-Now the question is, if we want to follow the signal processing pipeline, we need to figure out a transformation, that lets us easily manipulate the data such to reduce noise.
+The signal processing perspective asks for a slightly different optimization problem:
+$$
+<a id="objective-2"></a>
+min_p ||\hat{p} - p||_2^2 + \lambda \Epsilon(p)
+$$
+, where $\hat{p}$ is the noisy signal, which in our case is given by the empirical distribution.
+
+To solve this we want to follow the signal processing pipeline: we need to figure out a transformation, that lets us easily manipulate the data such to reduce noise.
 
 For this we need to take a deeper look at the function $\Epsilon(p)$.
 
@@ -452,7 +459,34 @@ Since we are looking for a transformation to apply, the most natural thing to do
 From the properties we know that a diagonalization exists and the eigenvectors form a orthonormal basis.
 
 Therefore, we get $p^T L p = p^TQ \Lambda Q^T p = z^T \Lambda z = \sum_i \lambda_i z_i^2$, where $z = Q^Tp$, i.e. z is the new vector after we apply the transformation $Q^T$ to our initial vector p.
-So after we applied the transformation the smoothnes/noise of $p$ is now measured by $\Epsilon(p) = \sum_i \lambda_i z_i$.
+So after we applied the transformation the smoothnes/noise of $p$ is now measured by $\Epsilon(p) = \sum_i \lambda_i z_i^2$.
+
+Substituting $p = Qz$ into the signal processing objective function gives us:
+$$
+\min_z ||\hat{p} - Qz||_2^2 + \lambda z^T \Lambda z
+$$
+s.t. $Qz \geq 0, \qquad 1^T Qz = 1$$.
+
+We can further rewrite $||\hat{p} - Qz||_2^2 = ||\hat{z} - z||_2^2$, because Q is orthonormal.
+Given the new objective function $||\hat{z} - z||_2^2 + \lambda z^T \Lambda z||$ its gradient is given by 
+$$
+\nabla_z\left(|\hat z-z|_2^2+\lambda z^T\Lambda z\right)
+= 2(z-\hat z)+2\lambda \Lambda z
+=2\left((I+\lambda\Lambda)z-\hat z\right).
+$$
+Setting it to 0 and solving for z, we get:
+$$
+z = (I + \lambda \Lambda)^{-1} \hat{z} = diag(\frac{1}{1 + \lambda \lambda_1), \frac{1}{1 + \lambda \lambda_2), \ldots, \frac{1}{1 + \lambda \lambda_{2^n}) \hat{z}
+$$
+This solution satisfies $1^T Qz = 1$:
+We know because $L$ is a graph Laplacian that 1 is an eigenvector with eigenvalue 0 of that matrix.
+Normalizing this vector to unit length, we know that $\frac{1}{\sqrt(2^n}} 1$ is eigenvector to the smallest eigenvalue.
+This must then be the first row vector in the $Q$ matrix.
+Therefore, we know that $1^TQ = (\sqrt(2^n), 0, ...)$ because all other row vectors are orthonormal to the $1$ vector and the first one is the 1 vector scaled.
+Then the constraint becomes $1^T Qz = 1 \iff (\sqrt(2^n), 0, ...)^T z = 1 \iff z_0 = \frac{1}{\sqrt(2^n}$.
+Given that the solution we found is $ z = diag(\frac{1}{1 + \lambda \lambda_1), \frac{1}{1 + \lambda \lambda_2), \ldots, \frac{1}{1 + \lambda \lambda_{2^n}) \hat{z}$,
+we see that $z_0 = \frac{1}{1 + \lambda \lambda_1) \hat{z}_0 = \frac{1}{1 + \lambda 0) \hat{z}_0 = \hat{z}_0 = (Q\hat{p})_0 = q_0^T \hat{p} = \frac{1}{\sqrt(2^n}} 1^T\hat{p} = \\frac{1}{\sqrt(2^n}} \sum_i \hat{p_i} = \frac{1}{\sqrt(2^n)}} 1 = \frac{1}{\sqrt(2^n)}}$.
+Plugging this back into $1^T Qz = 1 \iff (\sqrt(2^n), 0, ...)^T z = 1 \iff \sqrt(2^n) z_0 = 1 \iff \sqrt(2^n) \frac{1}{\sqrt(2^n)}} = 1$, is indeed true.
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
