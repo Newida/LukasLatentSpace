@@ -487,6 +487,9 @@ Then the constraint becomes $1^T Qz = 1 \iff (\sqrt(2^n), 0, ...)^T z = 1 \iff z
 Given that the solution we found is $ z = diag(\frac{1}{1 + \lambda \lambda_1), \frac{1}{1 + \lambda \lambda_2), \ldots, \frac{1}{1 + \lambda \lambda_{2^n}) \hat{z}$,
 we see that $z_0 = \frac{1}{1 + \lambda \lambda_1) \hat{z}_0 = \frac{1}{1 + \lambda 0) \hat{z}_0 = \hat{z}_0 = (Q\hat{p})_0 = q_0^T \hat{p} = \frac{1}{\sqrt(2^n}} 1^T\hat{p} = \\frac{1}{\sqrt(2^n}} \sum_i \hat{p_i} = \frac{1}{\sqrt(2^n)}} 1 = \frac{1}{\sqrt(2^n)}}$.
 Plugging this back into $1^T Qz = 1 \iff (\sqrt(2^n), 0, ...)^T z = 1 \iff \sqrt(2^n) z_0 = 1 \iff \sqrt(2^n) \frac{1}{\sqrt(2^n)}} = 1$, is indeed true.
+
+However, this does not necessarily hold for the non-negativity constraint: $Qz \geq 0$.
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
