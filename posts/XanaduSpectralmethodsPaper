@@ -350,8 +350,99 @@ We measure the smoothness again by $\Epsilon(p)$.
 We now also interprete $\Epsilon(p)$ as a function that tells us how noisy the signal $p$ is.
 
 Ok now that we have this in place, our goal is to filter out the noise from the given signal to find the original ideal one.
-The noisy signal is given by the empirical distribution.
+As explained, the noisy signal is given by the empirical distribution.
 Now the question is, if we want to follow the signal processing pipeline, we need to figure out a transformation, that lets us easily manipulate the data such to reduce noise.
+
+For this we need to take a deeper look at the function $\Epsilon(p)$.
+
+Recall that we defined
+
+$$
+\Epsilon(p)
+=
+\frac{1}{2^n}
+\sum_{x \in \{0,1\}^n}
+\sum_{i=1}^n
+\left(p(x) - p(x \oplus e_i)\right)^2.
+$$
+
+One can show that this is equal to $\Epsilon(p) = 2^{1-n}p^TLp$. If you have already seen this, you might recognize that $L$ is a graph Laplacian.
+We will explain what that is now. Assume you have a graph. In our case all solutions and their neighbors form a graph called Boolean hypercube:
+
+Each bitstring is a vertex.
+
+Two vertices are connected if they differ in exactly one bit.
+
+So for $n=3$, the graph is the cube:
+
+        000 -------- 001
+       / |          / |
+    010 -------- 011  |
+     |  |         |   |
+     | 100 -------|--101
+     | /          | /
+    110 -------- 111
+
+A graph is defined by edged E and vertices V. In the image each bit string is a vertex and they are connected to their neighbors by edges.
+This graph can be represented by an adjacency matrix A:
+[
+\begin{array}{c|cccccccc}
+& 000 & 001 & 010 & 011 & 100 & 101 & 110 & 111 \
+\hline
+000 & 0 & 1 & 1 & 0 & 1 & 0 & 0 & 0 \
+001 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 \
+010 & 1 & 0 & 0 & 1 & 0 & 0 & 1 & 0 \
+011 & 0 & 1 & 1 & 0 & 0 & 0 & 0 & 1 \
+100 & 1 & 0 & 0 & 0 & 0 & 1 & 1 & 0 \
+101 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 1 \
+110 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 1 \
+111 & 0 & 0 & 0 & 1 & 0 & 1 & 1 & 0
+\end{array}
+]
+This matrix has a 1 if vertices are connected and 0 if they are not. Because the edges have no direction, this matrix is symmetric.
+
+The degree matrix D is a diagonal matrix that stores how many neighbors each vertex has:
+[
+\begin{array}{c|cccccccc}
+& 000 & 001 & 010 & 011 & 100 & 101 & 110 & 111 \
+\hline
+000 & 3 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \
+001 & 0 & 3 & 0 & 0 & 0 & 0 & 0 & 0 \
+010 & 0 & 0 & 3 & 0 & 0 & 0 & 0 & 0 \
+011 & 0 & 0 & 0 & 3 & 0 & 0 & 0 & 0 \
+100 & 0 & 0 & 0 & 0 & 3 & 0 & 0 & 0 \
+101 & 0 & 0 & 0 & 0 & 0 & 3 & 0 & 0 \
+110 & 0 & 0 & 0 & 0 & 0 & 0 & 3 & 0 \
+111 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 3
+\end{array}
+]
+
+You calculate D by taking each row of the adjacency matrix, summing its entries and placing that number on the diagonal: $D = diag(A \codt 1_n)$, where $1_n$ is an $n$ dimensional vector with all entries 1.
+
+The unnormalised graph Laplacian is given by $L = A - D$:
+[
+\begin{array}{c|cccccccc}
+& 000 & 001 & 010 & 011 & 100 & 101 & 110 & 111 \
+\hline
+000 & 3 & -1 & -1 & 0 & -1 & 0 & 0 & 0 \
+001 & -1 & 3 & 0 & -1 & 0 & -1 & 0 & 0 \
+010 & -1 & 0 & 3 & -1 & 0 & 0 & -1 & 0 \
+011 & 0 & -1 & -1 & 3 & 0 & 0 & 0 & -1 \
+100 & -1 & 0 & 0 & 0 & 3 & -1 & -1 & 0 \
+101 & 0 & -1 & 0 & 0 & -1 & 3 & 0 & -1 \
+110 & 0 & 0 & -1 & 0 & -1 & 0 & 3 & -1 \
+111 & 0 & 0 & 0 & -1 & 0 & -1 & -1 & 3
+\end{array}
+]
+
+Graph Laplacians have the following 3 important properties:
+1. For every p we have $p^TLP = \sum_{i,j}^n A_{ij}(p_i - p_j)^2$
+2. L is symmetric and positive semi-definite
+3. The smallest eigenvalue of L is 0, the corresponding eigenvector is the constant one vector $1_n$
+
+From the first property we can see the connection because $\Epsilon(p)$ has exactly the right hand sight form of the equation.
+So we see that we are actually dealing with a graph Laplacian in our smoothing journey so far.
+
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
