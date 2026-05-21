@@ -1,0 +1,50 @@
+If you were ever interested in quantum computing you probably know about the most basic algorithms that pose a quantum advantage like: Deutsch, Deutsch-Jozsa, Simon, etc.
+
+These things are then explained in terms of quantum circuit models and there is most likely one sentence saying, "btw. this is Fourier Transform".
+
+Since I find the quantum circuits models quite unintuitive to find and you basically are presented with the solutuin and only shownt the math that it works, maybe we can find an untuitive version starting from the Fourier Transform to these problems and their quantum solution.
+
+Let us start with Deutsch problem
+
+# Deutsch problem
+
+1. Problem statement:
+We are given black-box access to a Boolean function
+
+$$
+f : \{0,1\} \to \{0,1\}.
+$$
+
+The task is to decide whether $f$ is **constant** or **balanced**.
+**Constant** means that:
+$$
+f(0) = f(1).
+$$
+and **balanced** if
+$$
+f(0) \neq f(1).
+$$
+
+2. Challenges:
+There are exactly four possible such functions:
+$$
+\begin{array}{c|cc|c}
+& f(0) & f(1) & \text{type} \\
+\hline
+f_1 & 0 & 0 & \text{constant} \\
+f_2 & 1 & 1 & \text{constant} \\
+f_3 & 0 & 1 & \text{balanced} \\
+f_4 & 1 & 0 & \text{balanced}
+\end{array}
+$$
+
+If we want to solve the problem, we need to evaluate both values
+$$
+f(0)
+\qquad \text{and} \qquad
+f(1).
+$$
+So a classical deterministic algorithm needs two oracle queries.
+
+3. Quantum approach:
+The quantum algorithm solves the problem with one oracle query.
