@@ -108,8 +108,32 @@ $$
 This transforms $x_i = 0 \leftrightarrow z_i = +1$ and $x_i = 1 \leftrightarrow z_i = - 1$.
 
 4. Build a Hamiltonian:
-TODO
+Ok now in physics the Hamiltonian is the energy operator of a system.
+Since we have converted our problem into an energy function, all we need to do is build the Hamiltonian that has this energy function.
+How does that look like?
+If x is the input and E(x) is its energy, the Hamiltonian has the following property: $H \ket{x} = E(x) \ket{x}$.
+This has the effect that $\bra{x}H\ket{x} = E(x)$. This way the Hamiltonian implements our given energy function.
 
+Given a 3-SAT formula, how can we build the Hamiltonian with this property?
+Let us look at an example clause: $C_i = (x_1 \vee \neg x_2 \vee x_5)$.
+This clause is false/violated only by the assignment $x_1 = 0$, $x_2 = 1$, $x_5 = 0$.
+For positive literals, we can have the following operator:
+$$\frac{I + Z_i}{2}$$
+This is because $\frac{I + Z_i}{2} \ket{0} = \ket{0}$ and $\frac{I + Z_i}{2} \ket{1} = 0$.
+So this operator acts as the identity, if the assignment is such that we want it and $0$ otherwise.
+For negative literals, we do:
+$$\frac{I + Z_i}{2}$$
+This is because $\frac{I - Z_i}{2} \ket{0} = 0$ and $\frac{I - Z_i}{2} \ket{1} = -\ket{1}$.
+So this operator acts as minus identity, if the assignment is such that we want it and $0$ otherwise.
+Combining them we have:
+$$H_{C_i} = \frac{I + Z_1}{2}\frac{I - Z_2}{2}\frac{I + Z_5}{2}$$
+This operator is $0$ if we choose any assignment that is not violating the clause $x_1 = 0$, $x_2 = 1$, $x_5 = 0$.
+
+This defines a Hamiltonian operator but only for this one clause. Then the total Hamiltonian for the formula can be build by simply:
+$$ H = \sum_C H_C$$
+This is because the sum of a Hamiltonian also is still a Hamiltonian.
+
+# Execution on a quantum computer
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
