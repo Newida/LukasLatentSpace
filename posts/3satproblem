@@ -52,3 +52,9 @@ Meaning:
 * If (\alpha > 4.267), a random instance is likely unsatisfiable.
 
 The hardest random instances occur near this threshold.
+
+# Verification is cheap
+
+If someone gives you an assignment $(x_1,\ldots,x_n)$ you only need to check whether each clause is satisfied.
+For each clause, evaluate its 3 literals and one OR operation.
+With m clauses, total verification cost is $O(m)$.
