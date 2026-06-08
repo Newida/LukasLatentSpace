@@ -40,3 +40,15 @@ Given a formula $(\Phi)$ find an assignment $x_1,\ldots,x_n \in {0,1}$ such that
 $$
 \Phi(x_1,\ldots,x_n)=1.
 $$
+
+# The Parameter (\alpha)
+
+In SAT literature one often defines $\alpha = \frac{m}{n}$ as the **clause density**.
+
+For random 3-SAT there is a famous phase transition around $\alpha_c \approx 4.267$
+Meaning:
+
+* If (\alpha < 4.267), a random instance is likely satisfiable.
+* If (\alpha > 4.267), a random instance is likely unsatisfiable.
+
+The hardest random instances occur near this threshold.
