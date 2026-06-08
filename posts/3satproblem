@@ -1,0 +1,42 @@
+Today, we will be having a look at the 3-SAT problem. Why?
+
+1. It is NP-complete, but still very simple
+2. You can control its size: n = number of variables, m = number of clauses,
+3. You can control its hardness: $\alpha = \frac{m}{n} =$ clause density, $\alpha < 4.26$ easy, $\alpha = 4.26$ transition, $\alpha > 4.26$ hard
+4. Verification of a solution is cheap
+5. It maps naturally to optimization and quantum Hamiltonians
+6. There are strong classical baselines
+
+# Problem setting:
+
+n = number of Boolean variables
+m = number of clauses
+
+The variables are usually denoted as $x_1, x_2, \ldots, x_n$ and each variable can take values $x_i \in {0,1}$.
+
+A **literal** is either $x_i$ or its negation $\neg x_i$.
+
+A **3-clause** contains exactly three literals connected by OR:
+$$
+(\ell_1 \vee \ell_2 \vee \ell_3)
+$$
+
+where each (\ell_j) is a literal.
+
+For example: $(x_1 \vee \neg x_2 \vee x_5)$
+
+The clause is satisfied if **at least one** of the three literals is true.
+
+The whole **formula** is a conjunction (AND) of clauses:
+
+$$
+\Phi
+====
+
+C_1 \wedge C_2 \wedge \cdots \wedge C_m.
+$$
+
+Given a formula $(\Phi)$ find an assignment $x_1,\ldots,x_n \in {0,1}$ such that **all clauses are simultaneously satisfied**.
+$$
+\Phi(x_1,\ldots,x_n)=1.
+$$
