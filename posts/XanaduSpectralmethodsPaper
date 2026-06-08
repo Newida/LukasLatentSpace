@@ -490,6 +490,7 @@ Plugging this back into $1^T Qz = 1 \iff (\sqrt(2^n), 0, ...)^T z = 1 \iff \sqrt
 
 However, this does not necessarily hold for the non-negativity constraint: $Qz \geq 0$.
 
+To be continued ...
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
