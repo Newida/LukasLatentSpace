@@ -48,3 +48,6 @@ So a classical deterministic algorithm needs two oracle queries.
 
 3. Quantum approach:
 The quantum algorithm solves the problem with one oracle query.
+
+
+To be continued...
