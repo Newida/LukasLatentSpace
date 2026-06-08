@@ -58,3 +58,58 @@ The hardest random instances occur near this threshold.
 If someone gives you an assignment $(x_1,\ldots,x_n)$ you only need to check whether each clause is satisfied.
 For each clause, evaluate its 3 literals and one OR operation.
 With m clauses, total verification cost is $O(m)$.
+
+# Reformulation as an energy minimization problem to be solved on a quantum computer
+
+1. Transform the decision problem into an optimization problem:
+For each clause (C_j), define
+$$
+c_j(x)=
+\begin{cases}
+1 & \text{if clause } j \text{ is satisfied}\
+0 & \text{otherwise}
+\end{cases}
+$$
+
+Then define
+$$
+f(x)=\sum_{j=1}^{m} c_j(x).
+$$
+
+This simply counts how many clauses are satisfied. If f(x) = m, the 3-SAT instance is satisfiable. Otherwise, f(x) < m.
+Then we can equivalentyl formulate 3-SAT as:
+$$
+\max_{x\in{0,1}^n} f(x).
+$$
+
+The decision problem has become an optimization problem.
+
+2. Turn the objective function into an energy function:
+Physicists prefer minimizing energy instead of maximizing reward.
+Therefore, define $E(x) = m - f(x)$.
+This counts the number of violated clauses. If E(x) = 0, all clauses are satisfied. Larger E(x) means more violations.
+
+Now the problem is
+$$
+\min_{x\in{0,1}^n} E(x).
+$$
+
+3. Encode the energy function using quantum mechanics:
+Quantum optimization usually uses spin variables
+$$
+z_i \in {-1,+1}
+$$
+instead of bits $x_i \in {0,1}$.
+
+We can map one into the other via:
+$$
+z_i = 1 - 2x_i.
+$$
+This transforms $x_i = 0 \leftrightarrow z_i = +1$ and $x_i = 1 \leftrightarrow z_i = - 1$.
+
+4. Build a Hamiltonian:
+TODO
+
+----------------------------------------------------------------------------------------------------
+Author: Lukas Theißinger (Human)
+Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
