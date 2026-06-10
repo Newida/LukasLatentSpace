@@ -134,6 +134,7 @@ $$ H = \sum_C H_C$$
 This is because the sum of a Hamiltonian also is still a Hamiltonian.
 
 # Execution on a quantum computer
+## Simple quantum measurements
 For this we need to understand how quantum measurements work.
 In general this is pretty simple:
 1. Let $\ket{\phi}$ be your quantum state and $O$ an observable, i.e. $O^\dagger = O$
@@ -141,11 +142,86 @@ In general this is pretty simple:
 Then making a SINGLE measurement gives you a SINGLE eigenvalue $\lambda$. That's it. The result of your measurment is a single real value!
 However, you also know that the probability of seeing this eigenvalue $\lambda$ as the result is given by $p(\lambda) = \bra{\phi}\Pi_\lambda\ket{\phi}$.
 Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}{\sqrt(p(\lambda)}$.
+This is the usual projective measurement rule.
 
-That sounds simple enough! Let us look at an example: Given $H = Z_1Z_2 + x_1X_2$ and the state $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
+Let us first look at the most simple case
+Let our state be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$ our observable is given by $Z_1Z_2$. 1. cleared.
+Now, we also know the spectral decomposition of $Z_1Z_2 = 1 \cdot (\ket{00} \bra{00} + \ket{11} \bra{11}) + (-1) \cdot (\ket{01} \bra{01} + \ket{10} \bra{10})$.
+This is easy to calculate knowing that $Z = 1 \ket{0}\bra{0} + (-1) \ket{1} \bra{1}$ and $Z_1Z_2 = Z \otimes Z$ is just the tensorproduct. 2. cleared.
+So we know that we measure the eigenvalue 1 with probability $p(1) = \frac{1}{2}$ and $-1$ with probability $p(-1) = \frac{1}{2}$. 
+If we measure the eigenvalue 1, then we can infer that the eigenvector and therefore the state after measurment is $\frac{\ket{00} + \ket{11}}{\sqrt(2)}$.
+Similarly, if we had measured eigenvalue -1, then we infer that the state after measurement is $\frac{\ket{01} + \ket{10}}{\sqrt(2)}$.
+
+Ok, so far so good. But of course you must know that this is NOT what standard quantum computer readout usually does.
+Usually, when we run a circuit on a quantum computer and measure, the machine returns bitstrings like $00$, $01$, $10$, $11$.
+Ok maybe we can figure this out backwards. We want our output to be $\ket{00}$, $\ket{01}$, $\ket{10}$, $\ket{11}$.
+Accordings to 2., these then just have to be the eigenvectors of the observable sucht that they become the state after measurement.
+Well ok, easy, we then choose as obseravable the identity matrix: $I = \ket{00}\bra{00} + \ket{01}\bra{01} + \ket{10}\bra{10} + \ket{11}\bra{11}$.
+Ok but there is a problem, the only eigenvalue the identity matrix has is 1. So if we measure 1, then what is the state after measurement?
+Which projector, out of the 4 do we need to apply?
+Well, we don't know and it cannot be figured out, instead we need to make sure that the eigenspaces are non-degenerative.
+We can than fix this issue by instead defining some arbitrary observable like this: $O = 0 \cdot \ket{00}\bra{00} + 1 \cdot \ket{01}\bra{01} + 2 \cdot \ket{10}\bra{10} + 3 \cdot \ket{11}\bra{11}$.
+Now each eigenvector has a different eigenvalue and therefore, we can now differentiate between them, great success!!!
+
+Of course, this is not how quantum computers do it either!!!
+The measure each qubit **seperately**. Measuring the first qubit then comes down to the observable $Z_1 = Z \otimes I$.
+The spectral decomposition is $Z_1 = 1 \cdot (\ket{0}\bra{0} \otimes I) + (-1) \cdot (\ket{1}\bra{1} \otimes I)$.
+We deliberately write the spectral decomposition like this, to show that of course the observable is defined on both qubits, it does not influence the second one.
+It only tells us wether the first qubit is in the (+1)-eigenspace or the (-1)-eigenspace of Z_1. 
+So if we measure +1 as eigenvalue, we know the first part of the state collapsed to $\ket{0}$ and for -1 we get $\ket{1}$.
+Of course the rest of the state is kept untouched.
+
+On our example the calculations look like this:
+Given our state $\ket{++} = \frac{1}{2}(\ket{00} + \ket{01} + \ket{10} + \ket{11})$, observable $Z_1$, we measure +1 with probability $p(1) = \frac{1}{2}$ and for -1 $p(-1) = \frac{1}{2}$.
+If we measure +1, the state after measurement is: $\frac{\Pi^{(1)}_{+}\ket{++}}{\sqrt{p(+1)}} = \frac{\ket{00} + \ket{01}}{\sqrt{2}} = \ket{0+}$.
+Similarly, if we measure (-1), the post-measurement state is: \frac{\ket{10}+\ket{11}}{\sqrt{2}} = \ket{1+}$.
+So after measuring the first qubit, we have collapsed the first qubit, but the second qubit is still ontouched.
+This is an important point:
+     Measuring one qubit does not automatically measure all qubits.
+
+Now we can do the same thing for the second measure the second qubit.
+The observable for measuring the second qubit is $Z_2 = I \otimes Z.$, $Z_2 = 1 \cdot (I \otimes \ket{0}\bra{0}) + (-1) \cdot (I \otimes \ket{1}\bra{1})$.
+Now, here of course the state that we have is no longer $\ket{++}$, because we alread did a measurment of the first qubit.
+The state that me measure now is $\ket{0+}$ or $\ket{1+}$, depending on the result of the first measurement.
+The first measurement gives us the first bit and the second measurement gives us the second bit, resulting in our desired bit string output.
+In general the order matters!
+Also there is two reasons we cannot simply choose the observable $Z_1Z_2$ to measure both at the same time: a) measuring the observable Z_1Z_2 gives only one eigenvalue, while the two measurements in sequence can give us two different eigenvalues!
+b) because order of the measurements can matter.
+
+However, there is a trick to this: The two observables $Z_1$ and $Z_2$ commute, i.e. $[Z_1,Z_2] = Z_1Z_2 - Z_2Z_1 = 0$.
+This means, that in this case the order actually does NOT matter. In general, commuting Hermitian observables can be simultaneously diagonalized, i.e. they share an eigenbase. In this case this is the computational basis.
+It allows in practice to do the measurements at the same time together (in parallel).
+
+## More general measurements
+Ok, so we understand the standard way of doing measurements now, but as we can see in our original rules for the measurement, in theory it is not restricted to measure only in computational basis.
+What if I wanted to measure $\ket{++}$ with the observable $X_1$. How can I do that, knowing that the quantum computer can only measure in the computational basis?
+...TODO
+
+
+However, so far we have followed the definition closely and step 2. requires us to know the spectral decomposition of our observable. What do we do, when we do not know that?
+Let e.g. our observable be $H = Z_1Z_2 + X_1X_2$, ... TODO
+
+# Measuring expectation values
+TODO: rewrite this entire part, but keep the example the same
+That sounds simple enough! Let us look at an example: Given $H = Z_1Z_2 + X_1X_2$ and the state $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
 1. cleared, 2. Now we need the spectral decomposition of H. WAIT... hold on. We don't know the spectral decomposition of H and calculating it is extremely expensive.
 Because in general our space is $2^n$ and therefore, we would need to calculate the spectral decomposition of a $2^n \times 2^n$ complex matrix!
 But using the quantum computer was supposed to help us from doing that!!!
+
+So how can we go about this?
+Well let's look what H consists of: $Z_1Z_2$, $X_1X_2$. These are Paulistrings! In general, an observable can be decomposed in terms of such Paulistrings:
+$$ H \sum_l h_l P_l$$
+Paulistrings are so important because we do know their spectral decomposition! This would of course also hold for other kind of operators, but as it stands of right now, for the quantum computer today, it is only possible to measure in terms of these Paulistrings.
+(Actually, it is even worse... we can only measure in $Z_i$ basis. This is also called the standard/canonical basis, because the eigenvectors are 
+To measure in $X_i$ or $Y_i$ we would additionally apply the respective $X$ gate or $Y$ gate to the state first and then measure in the $Z_i$ basis.)
+
+Ok, we see that our $H$ is already given as the sum of to Paulistrings. So the first thing we would do is measure the state $\ket{++}$ in terms of $Z_1Z_2$.
+$Z_1Z_2$ spectral decomposition is given by: $Z_1Z_2$ = 1 \cdot (\ket{00} \bra{00} + \ket{11} \bra{11}) \otimes I + (-1) \cdot (\ket{01} \bra{01} + \ket{10} \bra{10})$
+Measuring $\ket{++}$ in terms of this, then gives us $1$ with probability $p(1) = \frac{1}{2}$ and $p(-1) = \frac{1}{2}$.
+
+Then for the second measurement we look at the spectral decomposition of $X_1X_2 = 1 \cdot (\ket{\Phi^+}\bra{\Phi^+} + \ket{\Psi^+}\bra{\Psi^+}) + (-1) \cdot (\ket{\Phi^-}\bra{\Phi^-} + \ket{\Psi^-}\bra{\Psi^-})$, where
+$\ket{\Phi}$ and $\ket{\Psi}$ are the Bell states.
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
