@@ -134,6 +134,18 @@ $$ H = \sum_C H_C$$
 This is because the sum of a Hamiltonian also is still a Hamiltonian.
 
 # Execution on a quantum computer
+For this we need to understand how quantum measurements work.
+In general this is pretty simple:
+1. Let $\ket{\phi}$ be your quantum state and $O$ an observable, i.e. $O^\dagger = O$
+2. Let $O = \sum_\lambda \lambda \Pi_\lambda$ be the spectral decomposition of $O$
+Then making a SINGLE measurement gives you a SINGLE eigenvalue $\lambda$. That's it. The result of your measurment is a single real value!
+However, you also know that the probability of seeing this eigenvalue $\lambda$ as the result is given by $p(\lambda) = \bra{\phi}\Pi_\lambda\ket{\phi}$.
+Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}{\sqrt(p(\lambda)}$.
+
+That sounds simple enough! Let us look at an example: Given $H = Z_1Z_2 + x_1X_2$ and the state $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
+1. cleared, 2. Now we need the spectral decomposition of H. WAIT... hold on. We don't know the spectral decomposition of H and calculating it is extremely expensive.
+Because in general our space is $2^n$ and therefore, we would need to calculate the spectral decomposition of a $2^n \times 2^n$ complex matrix!
+But using the quantum computer was supposed to help us from doing that!!!
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
