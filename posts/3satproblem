@@ -138,7 +138,7 @@ In general this is pretty simple:
 2. Let $O = \sum_\lambda \lambda \Pi_\lambda$ be the spectral decomposition of $O$
 Then making a SINGLE measurement gives you a SINGLE eigenvalue $\lambda$. That's it. The result of your measurment is a single real value!
 However, you also know that the probability of seeing this eigenvalue $\lambda$ as the result is given by $p(\lambda) = \bra{\phi}\Pi_\lambda\ket{\phi}$.
-Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}}{\sqrt(p(\lambda)}$.
+Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}}{\sqrt{p(\lambda)}$.
 This is the usual projective measurement rule.
 
 Let us first look at the most simple case
@@ -219,17 +219,17 @@ To make it more educational, we choose the latter. Then we get the following equ
 Solving (I):
 $\bra{++}U_{before}^\dagger[\ket{1}\bra{1} \otimes I]U_{before}\ket{++} = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++}$
 $\bra{++}[U_{b}^\dagger\ket{1}\bra{1}U_{b} \otimes I]\ket{++} = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++}$
--> U_b = HX -> U_{before} = HX \otimes I.
+-> U_b^\dagger = HX -> U_b = XH -> U_{before} = XH \otimes I.
 To understand what we did here is, we just added the assumption that $U_{before} = U_b \otimes I$, because this would make the math much cleaner.
 Are we allowed to do this? Well, so far it works for (I), if it also works for (II), then sure, it becomes an elegant solution. Otherwise, we would need to go back to this step and find a different way.
 
 Solving (II) given $U_{before} = HX \otimes I$:
 $U_{after}\frac{[\ket{1}\bra{1} \otimes I] U_{before}\ket{++}}{\sqrt{p(-1)}} = \frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}} = \ket{++}$
-$U_{after}[\ket{1}\bra{1} \otimes I] [HX \otimes I] \ket{++} = \ket{++}$
+$U_{after}[\ket{1}\bra{1} \otimes I] [XH \otimes I] \ket{++} = \ket{++}$
 $U_{after}[\ket{1}\bra{+} \otimes I] \ket{++} = \ket{++}$
 $U_{after} \ket{1+} = \ket{++}$ -> $U_{after} = HX \otimes I$
 
-How wonderful! We see that we can simply apply the same operator $HX \otimes I$ before and after the measurement and this way we can get the same measurement result, even though we measure in the computational basis.
+How wonderful! We see that we can simply apply the same operator $XH \otimes I$ before and its inverse $HX \otimes I$ after the measurement and this way we can get the same measurement result, even though we measure in the computational basis.
 We have now learned how to properly apply the measurement rules, how measurements in the computational basis works, how general measurements work and can be transformed into measurements of the computational basis.
 
 Looking closely at the measurement rules again, we have followed the definition closely.
