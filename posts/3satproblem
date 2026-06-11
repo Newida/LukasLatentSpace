@@ -30,10 +30,7 @@ The clause is satisfied if **at least one** of the three literals is true.
 The whole **formula** is a conjunction (AND) of clauses:
 
 $$
-\Phi
-====
-
-C_1 \wedge C_2 \wedge \cdots \wedge C_m.
+\Phi = C_1 \wedge C_2 \wedge \cdots \wedge C_m.
 $$
 
 Given a formula $(\Phi)$ find an assignment $x_1,\ldots,x_n \in {0,1}$ such that **all clauses are simultaneously satisfied**.
@@ -207,9 +204,32 @@ Ok now, we want to achieve the same result, but with the fixed observable $Z_1$.
 If the observable is already fixed, then what can we still change? Answer: the state.
 We can change the state before the measurement, do the measurement with our fixed observabe and then transform the post-measurement state after the measurement.
 
-TODO
+Ok now let us put this into formulas:
+a) Desired outcome:
+(I) We get +1 with probability $p(1) = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++} = 1$, post measurement state $\frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}} = \ket{++}$.
+(II) We get -1 with probability $p(-1) = 0$.
+b) We have:
+(I) We get +1 with probability $p(1) = \bra{++}U_{before}^\dagger[\ket{0}\bra{0} \otimes I]U_{before}\ket{++}$, post measurement state $U_{after}\frac{[\ket{0}\bra{0} \otimes I] U__{before}\ket{++}}{\sqrt{p(1)}}$
+(II) We get -1 with probability $p(-1) = \bra{++}U_{before}^\dagger[\ket{1}\bra{1} \otimes I]U_{before}\ket{++}$, post measurement state $U_{after}\frac{[\ket{1}\bra{1} \otimes I] U__{before}\ket{++}}{\sqrt{p(-1)}}$
+c) Now we need to define some mapping, between a) and b). We can either choose that +1 in b) corresponds to a +1 in a) or that -1 in b) corresponds to +1 in a).
+To make it more educational, we choose the latter. Then we get the following equalities:
+(I) $p(-1) = \bra{++}U_{before}^\dagger[\ket{1}\bra{1} \otimes I]U_{before}\ket{++} = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++} = 1$
+(II) $U_{after}\frac{[\ket{1}\bra{1} \otimes I] U_{before}\ket{++}}{\sqrt{p(-1)}} = \frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}} = \ket{++}$
 
+Solving (I):
+$\bra{++}U_{before}^\dagger[\ket{1}\bra{1} \otimes I]U_{before}\ket{++} = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++}$
+$\bra{++}[U_{b}^\dagger\ket{1}\bra{1}U_{b} \otimes I]\ket{++} = \bra{++}[\ket{+}\bra{+} \otimes I] \ket{++}$
+-> U_b = HX -> U_{before} = HX \otimes I.
+To understand what we did here is, we just added the assumption that $U_{before} = U_b \otimes I$, because this would make the math much cleaner.
+Are we allowed to do this? Well, so far it works for (I), if it also works for (II), then sure, it becomes an elegant solution. Otherwise, we would need to go back to this step and find a different way.
 
+Solving (II) given $U_{before} = HX \otimes I$:
+$U_{after}\frac{[\ket{1}\bra{1} \otimes I] U_{before}\ket{++}}{\sqrt{p(-1)}} = \frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}} = \ket{++}$
+$U_{after}[\ket{1}\bra{1} \otimes I] [HX \otimes I] \ket{++} = \ket{++}$
+$U_{after}[\ket{1}\bra{+} \otimes I] \ket{++} = \ket{++}$
+$U_{after} \ket{1+} = \ket{++}$ -> $U_{after} = HX \otimes I$
+
+How wonderful! We see that we can simply apply the same operator $HX \otimes I$ before and after the measurement and this way we can get the same measurement result, even though we measure in the computational basis.
 We have now learned how to properly apply the measurement rules, how measurements in the computational basis works, how general measurements work and can be transformed into measurements of the computational basis.
 
 Looking closely at the measurement rules again, we have followed the definition closely.
