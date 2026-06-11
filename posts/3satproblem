@@ -149,8 +149,8 @@ Let our state be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{
 Now, we also know the spectral decomposition of $Z_1Z_2 = 1 \cdot (\ket{00} \bra{00} + \ket{11} \bra{11}) + (-1) \cdot (\ket{01} \bra{01} + \ket{10} \bra{10})$.
 This is easy to calculate knowing that $Z = 1 \ket{0}\bra{0} + (-1) \ket{1} \bra{1}$ and $Z_1Z_2 = Z \otimes Z$ is just the tensorproduct. 2. cleared.
 So we know that we measure the eigenvalue 1 with probability $p(1) = \frac{1}{2}$ and $-1$ with probability $p(-1) = \frac{1}{2}$. 
-If we measure the eigenvalue 1, then we can infer that the eigenvector and therefore the state after measurment is $\frac{\ket{00} + \ket{11}}{\sqrt(2)}$.
-Similarly, if we had measured eigenvalue -1, then we infer that the state after measurement is $\frac{\ket{01} + \ket{10}}{\sqrt(2)}$.
+If we measure the eigenvalue 1, then we infer that the state after measurment is $\frac{\ket{00} + \ket{11}}{\sqrt(2)}$, the measurement projects the state $\ket{++}$ onto the +1-eigenspace.
+Similarly, if we had measured eigenvalue -1, then we infer that the state after measurement is $\frac{\ket{01} + \ket{10}}{\sqrt(2)}$, the measurement projects the state $\ket{++}$ onto the -1-eigenspace.
 
 Ok, so far so good. But of course you must know that this is NOT what standard quantum computer readout usually does.
 Usually, when we run a circuit on a quantum computer and measure, the machine returns bitstrings like $00$, $01$, $10$, $11$.
@@ -171,7 +171,8 @@ The spectral decomposition is $Z_1 = 1 \cdot (\ket{0}\bra{0} \otimes I) + (-1) \
 We deliberately write the spectral decomposition like this, to show that of course the observable is defined on both qubits, it does not influence the second one.
 It only tells us wether the first qubit is in the (+1)-eigenspace or the (-1)-eigenspace of Z_1. 
 So if we measure +1 as eigenvalue, we know the first part of the state collapsed to $\ket{0}$ and for -1 we get $\ket{1}$.
-Of course, the rest of the state is kept untouched.
+Of course, the rest of the state is kept untouched. To be clear, untouched here means that there is no other operator acting on the second qubit other than the identity.
+However, entanglement between the qubits would absolutely chang the state and future measurement outcomes! But that is not what i was going for in this explanation.
 
 On our example state the calculations look like this:
 Given our state $\ket{++} = \frac{1}{2}(\ket{00} + \ket{01} + \ket{10} + \ket{11})$, observable $Z_1$, we measure +1 with probability $p(1) = \frac{1}{2}$ and for -1 $p(-1) = \frac{1}{2}$.
@@ -187,7 +188,8 @@ Now, here of course the state that we have is no longer $\ket{++}$, because we a
 The state that me measure now is $\ket{0+}$ or $\ket{1+}$, depending on the result of the first measurement.
 The first measurement gives us the first bit and the second measurement gives us the second bit, resulting in our desired bit string output.
 In general the order matters!
-Also there is two reasons we cannot simply choose the observable $Z_1Z_2$ to measure both at the same time: a) measuring the observable Z_1Z_2 gives only one eigenvalue, while the two measurements in sequence can give us two different eigenvalues!
+Also there is two reasons we CANNOT simply choose the observable $Z_1Z_2$ to measure both at the same time:
+a) measuring the observable $Z_1Z_2$ gives only one eigenvalue, while the two measurements in sequence can give us two different eigenvalues!
 b) because order of the measurements can matter.
 
 However, there is a trick to this: The two observables $Z_1$ and $Z_2$ commute, i.e. $[Z_1,Z_2] = Z_1Z_2 - Z_2Z_1 = 0$.
@@ -198,25 +200,22 @@ It allows in practice to do the measurements at the same time together (in paral
 Ok, so we understand the standard way of doing measurements now, but as we can see in our original rules for the measurement, in theory it is not restricted to measure only in computational basis, i.e. to the observables $Z_i$.
 What if I wanted to measure $\ket{++}$ with the observable $X_1$? How can I do that, knowing that the quantum computer can only measure observables $Z_i$?
 
-The spectral decomposition of our observable $X_1$ is given by $X_1 = +1 \cdot \ket{+} \otimes I + (-1) \cdot \ket{-} \otimes I$.
-Let us do our standard computation again: We get +1 with probability $p(1) = 1$, post measurement state $\ket{++}$ and -1 with probability $p(-1) = 0$, post measurement state $\ket{-+}$.
+The spectral decomposition of our observable $X_1$ is given by $X_1 = +1 \cdot \ket{+}\bra{+} \otimes I + (-1) \cdot \ket{-}\bra{-} \otimes I$.
+Let us do our standard computation again: We get +1 with probability $p(1) = 1$, post measurement state $\ket{++}$ and -1 with probability $p(-1) = 0$, post measurement state is undefined because we would be dividing by 0.
 
 Ok now, we want to achieve the same result, but with the fixed observable $Z_1$.
-So, if the observable is already fixed, the only thing that we can change is the state.
-We need to transform $\ket{++}$ somehow to a new state $\ket{\phi'}, such that a measurement of the transformed state $\ket{\phi'}$ with the observable $Z_i$, yields the same result as the measurment of the original state $\ket{++}$ with respect to the original observable $X_i$.
-Let us translate this into formulas:
-a) Desired output: 
-If measured 1, post-measurement state $\frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}}$ with probability $p(1) = \bra{++}[\ket{+}\bra{+} \otimes I]\ket{++}$.
-If measured -1, post-measurement state $\frac{[\ket{-}\bra{-} \otimes I]\ket{++}}{\sqrt{p(-1)}}$ with probability $p(-1) = \bra{++}[\ket{-}\bra{-} \otimes I]\ket{++}$.
-b) What we have:
-If measured 1, post-measurement state $\frac{[\ket{0}\bra{0} \otimes I]\ket{\phi'}}{\sqrt{p(1)}}$ with probability $p(1) = \bra{\phi'}[\ket{0}\bra{0} \otimes I]\ket{\phi'}$.
-If measured -1, post-measurement state $\frac{[\ket{1}\bra{1} \otimes I]\ket{\phi'}{\sqrt{p(-1)}}$ with probability $p(1) = \bra{\phi'}[\ket{1}\bra{1} \otimes I]\ket{\phi'}$.
+If the observable is already fixed, then what can we still change? Answer: the state.
+We can change the state before the measurement, do the measurement with our fixed observabe and then transform the post-measurement state after the measurement.
+
+TODO
 
 
+We have now learned how to properly apply the measurement rules, how measurements in the computational basis works, how general measurements work and can be transformed into measurements of the computational basis.
 
-
-However, so far we have followed the definition closely and step 2. requires us to know the spectral decomposition of our observable. What do we do, when we do not know that?
-Let e.g. our observable be $H = Z_1Z_2 + X_1X_2$, ... TODO
+Looking closely at the measurement rules again, we have followed the definition closely.
+Step 2. of the rules requires us to know the spectral decomposition of our observable and so far, we always have because our observables were so simple.
+But what do we do, when we do not know the spectral decomposition?
+Consider the observable to be $H = Z_1Z_2 + X_1X_2$ ... TODO
 
 # Measuring expectation values
 TODO: rewrite this entire part, but keep the example the same
