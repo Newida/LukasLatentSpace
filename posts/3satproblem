@@ -141,7 +141,7 @@ In general this is pretty simple:
 2. Let $O = \sum_\lambda \lambda \Pi_\lambda$ be the spectral decomposition of $O$
 Then making a SINGLE measurement gives you a SINGLE eigenvalue $\lambda$. That's it. The result of your measurment is a single real value!
 However, you also know that the probability of seeing this eigenvalue $\lambda$ as the result is given by $p(\lambda) = \bra{\phi}\Pi_\lambda\ket{\phi}$.
-Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}{\sqrt(p(\lambda)}$.
+Furthermore, you also know that the state after measurement is given by $\ket{\phi_\lambda} = \frac{\Pi_\lambda \ket{\phi}}{\sqrt(p(\lambda)}$.
 This is the usual projective measurement rule.
 
 Let us first look at the most simple case
@@ -158,20 +158,22 @@ Ok maybe we can figure this out backwards. We want our output to be $\ket{00}$, 
 Accordings to 2., these then just have to be the eigenvectors of the observable sucht that they become the state after measurement.
 Well ok, easy, we then choose as obseravable the identity matrix: $I = \ket{00}\bra{00} + \ket{01}\bra{01} + \ket{10}\bra{10} + \ket{11}\bra{11}$.
 Ok but there is a problem, the only eigenvalue the identity matrix has is 1. So if we measure 1, then what is the state after measurement?
-Which projector, out of the 4 do we need to apply?
-Well, we don't know and it cannot be figured out, instead we need to make sure that the eigenspaces are non-degenerative.
+The projector onto the eigenspace is again the identity, therefore the state just does not change at all.
+So if we did not know the state before, then we still do not know it now.
+So instead we need to make sure that the eigenspaces are non-degenerative.
 We can than fix this issue by instead defining some arbitrary observable like this: $O = 0 \cdot \ket{00}\bra{00} + 1 \cdot \ket{01}\bra{01} + 2 \cdot \ket{10}\bra{10} + 3 \cdot \ket{11}\bra{11}$.
-Now each eigenvector has a different eigenvalue and therefore, we can now differentiate between them, great success!!!
+Now each eigenvector has a different eigenvalue and therefore we know onto what state we project, great success!!!
+If the eigenvalue is 0, we know the state is $\ket{00}$, if the eigenvalue is 1, we know the state is $\ket{01}$, ....
 
-Of course, this is not how quantum computers do it either!!!
-The measure each qubit **seperately**. Measuring the first qubit then comes down to the observable $Z_1 = Z \otimes I$.
+Of course, this is NOT how quantum computers do it either!!!
+They measure each qubit **seperately**. Measuring the first qubit then comes down to the observable $Z_1 = Z \otimes I$.
 The spectral decomposition is $Z_1 = 1 \cdot (\ket{0}\bra{0} \otimes I) + (-1) \cdot (\ket{1}\bra{1} \otimes I)$.
 We deliberately write the spectral decomposition like this, to show that of course the observable is defined on both qubits, it does not influence the second one.
 It only tells us wether the first qubit is in the (+1)-eigenspace or the (-1)-eigenspace of Z_1. 
 So if we measure +1 as eigenvalue, we know the first part of the state collapsed to $\ket{0}$ and for -1 we get $\ket{1}$.
-Of course the rest of the state is kept untouched.
+Of course, the rest of the state is kept untouched.
 
-On our example the calculations look like this:
+On our example state the calculations look like this:
 Given our state $\ket{++} = \frac{1}{2}(\ket{00} + \ket{01} + \ket{10} + \ket{11})$, observable $Z_1$, we measure +1 with probability $p(1) = \frac{1}{2}$ and for -1 $p(-1) = \frac{1}{2}$.
 If we measure +1, the state after measurement is: $\frac{\Pi^{(1)}_{+}\ket{++}}{\sqrt{p(+1)}} = \frac{\ket{00} + \ket{01}}{\sqrt{2}} = \ket{0+}$.
 Similarly, if we measure (-1), the post-measurement state is: \frac{\ket{10}+\ket{11}}{\sqrt{2}} = \ket{1+}$.
@@ -193,9 +195,24 @@ This means, that in this case the order actually does NOT matter. In general, co
 It allows in practice to do the measurements at the same time together (in parallel).
 
 ## More general measurements
-Ok, so we understand the standard way of doing measurements now, but as we can see in our original rules for the measurement, in theory it is not restricted to measure only in computational basis.
-What if I wanted to measure $\ket{++}$ with the observable $X_1$. How can I do that, knowing that the quantum computer can only measure in the computational basis?
-...TODO
+Ok, so we understand the standard way of doing measurements now, but as we can see in our original rules for the measurement, in theory it is not restricted to measure only in computational basis, i.e. to the observables $Z_i$.
+What if I wanted to measure $\ket{++}$ with the observable $X_1$? How can I do that, knowing that the quantum computer can only measure observables $Z_i$?
+
+The spectral decomposition of our observable $X_1$ is given by $X_1 = +1 \cdot \ket{+} \otimes I + (-1) \cdot \ket{-} \otimes I$.
+Let us do our standard computation again: We get +1 with probability $p(1) = 1$, post measurement state $\ket{++}$ and -1 with probability $p(-1) = 0$, post measurement state $\ket{-+}$.
+
+Ok now, we want to achieve the same result, but with the fixed observable $Z_1$.
+So, if the observable is already fixed, the only thing that we can change is the state.
+We need to transform $\ket{++}$ somehow to a new state $\ket{\phi'}, such that a measurement of the transformed state $\ket{\phi'}$ with the observable $Z_i$, yields the same result as the measurment of the original state $\ket{++}$ with respect to the original observable $X_i$.
+Let us translate this into formulas:
+a) Desired output: 
+If measured 1, post-measurement state $\frac{[\ket{+}\bra{+} \otimes I] \ket{++}}{\sqrt{p(1)}}$ with probability $p(1) = \bra{++}[\ket{+}\bra{+} \otimes I]\ket{++}$.
+If measured -1, post-measurement state $\frac{[\ket{-}\bra{-} \otimes I]\ket{++}}{\sqrt{p(-1)}}$ with probability $p(-1) = \bra{++}[\ket{-}\bra{-} \otimes I]\ket{++}$.
+b) What we have:
+If measured 1, post-measurement state $\frac{[\ket{0}\bra{0} \otimes I]\ket{\phi'}}{\sqrt{p(1)}}$ with probability $p(1) = \bra{\phi'}[\ket{0}\bra{0} \otimes I]\ket{\phi'}$.
+If measured -1, post-measurement state $\frac{[\ket{1}\bra{1} \otimes I]\ket{\phi'}{\sqrt{p(-1)}}$ with probability $p(1) = \bra{\phi'}[\ket{1}\bra{1} \otimes I]\ket{\phi'}$.
+
+
 
 
 However, so far we have followed the definition closely and step 2. requires us to know the spectral decomposition of our observable. What do we do, when we do not know that?
