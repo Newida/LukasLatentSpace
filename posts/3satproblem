@@ -243,7 +243,7 @@ Also, if we know $U$ there is no guarante that it can be implemented efficiently
 Looking closely at the measurement rules again, we have followed the definition closely.
 Step 2. of the rules requires us to know the spectral decomposition of our observable and so far, we always have because our observables were so simple.
 But what do we do, when we do not know the spectral decomposition?
-Consider the observable to be $H = Z_1Z_2 + X_1X_2$ ... TODO
+Consider the observable to be $H = Z_1Z_2 + X_1X_2$. Our state is still given by $\ket{++}$.
 
 # Measuring expectation values
 TODO: rewrite this entire part, but keep the example the same
