@@ -230,7 +230,15 @@ $U_{after}[\ket{1}\bra{+} \otimes I] \ket{++} = \ket{++}$
 $U_{after} \ket{1+} = \ket{++}$ -> $U_{after} = HX \otimes I$
 
 How wonderful! We see that we can simply apply the same operator $XH \otimes I$ before and its inverse $HX \otimes I$ after the measurement and this way we can get the same measurement result, even though we measure in the computational basis.
+We are just going to note here, that this can be done in general.
+Let $O_1$ be the original observable and $O_2$ the one we can measure, in our case we had $O_1 = X_1$ and $O_2 = Z_1$.
+Essentially, all we need to associate measurement outputs of $O_2$ with outputs of our original $O_1$ as we did in c).
+Then, we can search for transformations, which implement whatever association we could come up with.
+Usually, we make sure that the transformation before the measurement is unitary and implementable on a quantum computer and after the measurement we can basically do whatever our classical hearts desire.
+
 We have now learned how to properly apply the measurement rules, how measurements in the computational basis works, how general measurements work and can be transformed into measurements of the computational basis.
+Note that we can find these transformation like $XH \otimes I$ in general, but since all matrices live in the space $2^n \times 2^n$ it is not efficient to do so naively.
+Also, if we know $U$ there is no guarante that it can be implemented efficiently. It might require and exponential number of gates.
 
 Looking closely at the measurement rules again, we have followed the definition closely.
 Step 2. of the rules requires us to know the spectral decomposition of our observable and so far, we always have because our observables were so simple.
