@@ -249,11 +249,16 @@ But to implement the measurement using computational-basis measurements, we woul
 As we already discussed, this can only be done using exponential effort, which is extremely inefficient.
 
 # Measuring expectation values
-TODO: rewrite this entire part, but keep the example the same
-That sounds simple enough! Let us look at an example: Given $H = Z_1Z_2 + X_1X_2$ and the state $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
-1. cleared, 2. Now we need the spectral decomposition of H. WAIT... hold on. We don't know the spectral decomposition of H and calculating it is extremely expensive.
-Because in general our space is $2^n$ and therefore, we would need to calculate the spectral decomposition of a $2^n \times 2^n$ complex matrix!
-But using the quantum computer was supposed to help us from doing that!!!
+Often in quantum computing we are interested in calculating values such as $\bra{\phi}H\ket{\phi}$.
+One such example is the 3-SAT problem we discussed above, were we showed that the problem of figuring out the satisfiability of a 3-SAT formula can be transformed into minimizing the value of $\bra{\phi}H_C\ket{\phi}$.
+Let start by looking at the following Hamiltoian $H = Z_1Z_2 + X_1X_2$. Let our state $\ket{\phi}$ again be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
+How can we calculate $\bra{\phi}H\ket{\phi}$ with a quantum computer?
+
+Since $H^\dagger = H$ we can use it as an observable. Great! Let's do a measurement.
+Given $H = Z_1Z_2 + X_1X_2$ its spectral decomposition is given by: $H = 2 \cdot \ket{\Phi^+}\bra{\Phi^+} + 0 \cdot [\ket{\Phi^-}\bra{\Phi^-} + \ket{\Psi^+}\bra{\Psi^+}]+ (-2) \cdot \ket{\Psi^-}\bra{\Psi^-}$,
+where $\ket{\Phi}$ and $\ket{\Psi}$ are the Bell states: $\ket{\Phi^+} = \frac{\ket{00} + \ket{11}}{\sqrt{2}}$, $\ket{\Phi^-} = \frac{\ket{00} - \ket{11}}{\sqrt{2}}$ and $\ket{\Psi^+} = \frac{\ket{01} + \ket{10}}{\sqrt{2}}$, $\ket{\Psi^-} = \frac{\ket{01} - \ket{10}}{\sqrt{2}}$.
+
+
 
 So how can we go about this?
 Well let's look what H consists of: $Z_1Z_2$, $X_1X_2$. These are Paulistrings! In general, an observable can be decomposed in terms of such Paulistrings:
