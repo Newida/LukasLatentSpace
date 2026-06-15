@@ -243,7 +243,10 @@ Also, if we know $U$ there is no guarante that it can be implemented efficiently
 Looking closely at the measurement rules again, we have followed the definition closely.
 Step 2. of the rules requires us to know the spectral decomposition of our observable and so far, we always have because our observables were so simple.
 But what do we do, when we do not know the spectral decomposition?
-Consider the observable to be $H = Z_1Z_2 + X_1X_2$. Our state is still given by $\ket{++}$.
+Consider an obervable $O$ which has no known locality, symmetry, tensor-product structure or decomposition into efficiently measurable terms.
+The projective measurement rule tells us what would happen if we measured $O$: the possible outcomes are its eigenvalues and the probabilities are determined by its eigenspace projectors.
+But to implement the measurement using computational-basis measurements, we would first have to find a unitary $U$ like we did before.
+As we already discussed, this can only be done using exponential effort, which is extremely inefficient.
 
 # Measuring expectation values
 TODO: rewrite this entire part, but keep the example the same
