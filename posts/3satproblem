@@ -271,15 +271,12 @@ With this, we know $\lambda$ and know $p(\lambda)$ so we can calculate $\sum_\la
 However, you might have noticed that we again assumed to know the spectral decomposition of $H$. Also, the number of $\lambda$ can be exponential as well.
 What can be done about this?
 
-Let us work with an example again: Let $H = Z_1Z_2$, $X_1X_2$.
-
-...
-
-These are Paulistrings! In general, an observable can be decomposed in terms of such Paulistrings:
+Let us work with our example again: Let $H = Z_1Z_2 + X_1X_2$. We already recognize $Z_1$ and $X_1$ because we looked at these observables before.
+This are Paulistrings! A Paulistring is defined by ...
+In general, an observable can be decomposed in terms of such Paulistrings:
 $$ H \sum_l h_l P_l$$
-Paulistrings are so important because we do know their spectral decomposition! This would of course also hold for other kind of operators, but as it stands of right now, for the quantum computer today, it is only possible to measure in terms of these Paulistrings.
-(Actually, it is even worse... we can only measure in $Z_i$ basis. This is also called the standard/canonical basis, because the eigenvectors are 
-To measure in $X_i$ or $Y_i$ we would additionally apply the respective $X$ gate or $Y$ gate to the state first and then measure in the $Z_i$ basis.)
+Paulistrings are so important because we do know their spectral decomposition!
+We also know how to measure them! (We have learned how $Z_i$ measurments work and also how $X_i$ can be converted into such)
 
 Ok, we see that our $H$ is already given as the sum of to Paulistrings. So the first thing we would do is measure the state $\ket{++}$ in terms of $Z_1Z_2$.
 $Z_1Z_2$ spectral decomposition is given by: $Z_1Z_2$ = 1 \cdot (\ket{00} \bra{00} + \ket{11} \bra{11}) \otimes I + (-1) \cdot (\ket{01} \bra{01} + \ket{10} \bra{10})$
