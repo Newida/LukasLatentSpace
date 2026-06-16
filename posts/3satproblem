@@ -1,4 +1,4 @@
-Today, we will be having a look at the 3-SAT problem. Why?
+     Today, we will be having a look at the 3-SAT problem. Why?
 
 1. It is NP-complete, but still very simple
 2. You can control its size: n = number of variables, m = number of clauses,
@@ -251,17 +251,31 @@ As we already discussed, this can only be done using exponential effort, which i
 # Measuring expectation values
 Often in quantum computing we are interested in calculating values such as $\bra{\phi}H\ket{\phi}$.
 One such example is the 3-SAT problem we discussed above, were we showed that the problem of figuring out the satisfiability of a 3-SAT formula can be transformed into minimizing the value of $\bra{\phi}H_C\ket{\phi}$.
-Let start by looking at the following Hamiltoian $H = Z_1Z_2 + X_1X_2$. Let our state $\ket{\phi}$ again be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
+Let start by looking at the following Hamiltonian $H = Z_1Z_2 + X_1X_2$. Let our state $\ket{\phi}$ again be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
 How can we calculate $\bra{\phi}H\ket{\phi}$ with a quantum computer?
 
-Since $H^\dagger = H$ we can use it as an observable. Great! Let's do a measurement.
-Given $H = Z_1Z_2 + X_1X_2$ its spectral decomposition is given by: $H = 2 \cdot \ket{\Phi^+}\bra{\Phi^+} + 0 \cdot [\ket{\Phi^-}\bra{\Phi^-} + \ket{\Psi^+}\bra{\Psi^+}]+ (-2) \cdot \ket{\Psi^-}\bra{\Psi^-}$,
-where $\ket{\Phi}$ and $\ket{\Psi}$ are the Bell states: $\ket{\Phi^+} = \frac{\ket{00} + \ket{11}}{\sqrt{2}}$, $\ket{\Phi^-} = \frac{\ket{00} - \ket{11}}{\sqrt{2}}$ and $\ket{\Psi^+} = \frac{\ket{01} + \ket{10}}{\sqrt{2}}$, $\ket{\Psi^-} = \frac{\ket{01} - \ket{10}}{\sqrt{2}}$.
+The measurement rule basically defines what a quantum computer actually calculates, which is:
+Given a state $\ket{\phi}$ and an observable $H$, a single measurment returns a single eigenvalue $\lambda$ and projects the state $\ket{\phi}$ onto the corresponding eigenspace (post measurement state) and we see the eigenvalue $\lambda$ with probability $p(\lambda) = \bra{\phi}\ket{\lambda} \bra{\lambda} \ket{\phi}$.
 
+This is a lot more powerful than it looks like at first.
+First, we realize that $H$ is an observable. To do a measurement with that observable, we already realized, that we need to know the spectral decomposition $H = \sum_\lambda \lambda \ket{\lambda}\bra{\lambda}$.
+Let us plug that into our formula to claculate $\bra{\phi}H\ket{\phi} = \sum_\lambda \lambda \bra{\phi}\ket{\lambda} \bra{\lambda} \ket{\phi} = \sum_\lambda \lambda p(\lambda)$.
+We see that this formula is actually an expectation value. That means, if we measure $H$ with state $\ket{\phi}$, we will get a single eigenvalue $\lambda$ returned with probability $p(\lambda)$.
+So how can we calculate $\bra{\phi}H\ket{\phi}$ with a quantum computer?
+Well, we need to calculate $\sum_\lambda \lambda p(\lambda)$. Assuming, we know the spectral decomposition of $H$, we know all $\lambdas$. So the $p(\lambda)$ is what is left.
+Of course, we could calculate that by hand given the formula, but that would be exponentially expensive as the states live in $2^n$ space.
+What we can do instead is, we measure the state $\ket{\phi}$ often with respect to our observalbe $H$. Then we get a lot of measurment results. From these we can estimate the corresponding probabilities $p(\lambda)$.
+The more measurements we do, the better our estimates are. This is usually called "the number of shots" used in a measurement.
+With this, we know $\lambda$ and know $p(\lambda)$ so we can calculate $\sum_\lambda \lambda p(\lambda)$, which is equal to $\bra{\phi}H\ket{\phi}$, our original goal.
 
+However, you might have noticed that we again assumed to know the spectral decomposition of $H$. Also, the number of $\lambda$ can be exponential as well.
+What can be done about this?
 
-So how can we go about this?
-Well let's look what H consists of: $Z_1Z_2$, $X_1X_2$. These are Paulistrings! In general, an observable can be decomposed in terms of such Paulistrings:
+Let us work with an example again: Let $H = Z_1Z_2$, $X_1X_2$.
+
+...
+
+These are Paulistrings! In general, an observable can be decomposed in terms of such Paulistrings:
 $$ H \sum_l h_l P_l$$
 Paulistrings are so important because we do know their spectral decomposition! This would of course also hold for other kind of operators, but as it stands of right now, for the quantum computer today, it is only possible to measure in terms of these Paulistrings.
 (Actually, it is even worse... we can only measure in $Z_i$ basis. This is also called the standard/canonical basis, because the eigenvectors are 
