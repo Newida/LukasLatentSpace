@@ -25,6 +25,32 @@ $$
 $$
 The question is then, how does $\frac{\partial U(C_\theta)}{\partial \theta_i}$ look like?
 
+Given the fact, that the circuit it build out of gates G, we see that
+$$
+\frac{\partial U(C_\theta)}{\partial \theta_i} = \frac{\partial U(G_L(\theta_L) U(G_{L-1}(\theta_{L-1})... U(G_1(\theta_1))}{\partial \theta_i} = U(G_L(\theta_L) U(G_{L-1}(\theta_{L-1}) ... \frac{\partial G_i(\theta_i)}{\partial \theta_i} ... U(G_{1}(\theta_{1})
+$$
+
+This leads us to the gradient of $U(G_i(\theta_i))$. Because this is a unitary it can be written as $U(G_i(\theta_i)) = \exp(-i \theta V)$, where $V$ is hermitian.
+The gradient is then easily calculated as:
+$$
+\frac{\partial U(G_i(\theta_i))}{\partial \theta_i} = \frac{\partial \exp(-i \theta_i V)}{\partial \theta_i} = -i V \exp(-i \theta_i V) = -i V U(G_i(\theta_i))
+$$
+
+So the main thing about the gradient lies in this derivative $\frac{\partial U(G_i(\theta_i))}{\partial \theta_i} = -i V U(G_i(\theta_i))$.
+
+# Reformulating the problem
+Now, knowing that everything hinges on $\frac{\partial U(G_i(\theta_i))}{\partial \theta_i}$, we can simplify the original objective to minimizing the loss function
+$$
+f(\theta_1) = \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}
+$$
+
+The gradient of this is given by:
+$$
+\frac{d \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}}{d\theta_1} = i \bra{0}\bra{0} U(G_1(\theta_1))^\dagger [V, H] U \ket{0}
+$$
+where $[V, H] = VH - HV$.
+Importantly this means, if $[V, H] = 0 \iff \frac{f(\theta)}{d \theta} = 0$ 
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
