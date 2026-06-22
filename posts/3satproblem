@@ -251,7 +251,7 @@ As we already discussed, this can only be done using exponential effort, which i
 # Measuring expectation values
 Often in quantum computing we are interested in calculating values such as $\bra{\phi}H\ket{\phi}$.
 One such example is the 3-SAT problem we discussed above, were we showed that the problem of figuring out the satisfiability of a 3-SAT formula can be transformed into minimizing the value of $\bra{\phi}H_C\ket{\phi}$.
-Let start by looking at the following Hamiltonian $H = Z_1Z_2 + X_1X_2 + Z_3$. Let our state $\ket{\phi}$ be $\ket{+++} = \frac{1}{8} (\ket{000} + \ket{001} + \ket{010} + \ket{011} + \ket{100} + \ket{101} + \ket{110} + \ket{111})$.
+Let start by looking at the following Hamiltonian $H = Z_1Z_2 + X_1X_2$. Let our state $\ket{\phi}$ be $\ket{++} = \frac{1}{2} (\ket{00} + \ket{01} + \ket{10} + \ket{11})$.
 How can we calculate $\bra{\phi}H\ket{\phi}$ with a quantum computer?
 
 The measurement rule basically defines what a quantum computer actually calculates, which is:
@@ -271,8 +271,8 @@ With this, we know $\lambda$ and know $p(\lambda)$ so we can calculate $\sum_\la
 However, you might have noticed that we again assumed to know the spectral decomposition of $H$. Also, the number of $\lambda$ can be exponential as well.
 What can be done about this?
 
-Let us work with our example again: $H = Z_1Z_2 + X_1X_2 + Z_3$ We already recognize $Z_1$ and $X_1$ because we looked at these observables before.
-The operators $Z_1Z_2$, $X_1X_2$ and $Z_3$ are special. They are examples of **Pauli strings**.
+Let us work with our example again: $H = Z_1Z_2 + X_1X_2$ We already recognize $Z_1$ and $X_1$ because we looked at these observables before.
+The operators $Z_1Z_2$ and $X_1X_2$ are special. They are examples of **Pauli strings**.
 A Pauli string on $n$ qubits is an operator of the form $P = P_1 \otimes P_2 \otimes \cdots \otimes P_n$, where each $P_i$ is one of the single-qubit Pauli operators $I,\quad X,\quad Y,\quad Z$.
 Pauli strings are very important, that is because, we know their spectral decomposition and can relatively easily measure Pauli string observables in practice.
 They become even more important by the fact that **every observable** acting on $n$ qubits can be written as a linear combination of Pauli strings:
@@ -283,26 +283,37 @@ where $h_l\in\mathbb{R}$ and the $P_l$ are Pauli strings.
 Remember that we are trying to calculate $\bra{\phi}H\ket{\phi}$. If we now plug in that $H$ is decomposable as Pauli string, we can rewrite this as:
 $\sum_l h_l \bra{\phi}P_l\ket{\phi}$
 Now, we can easily see what we should do. Instead of trying to measure $H$ directly, we can instead measure each Pauli string and the just sum the results as in the formula.
+However, if we are smart about this, we can be more efficient than setting up each Pauli string separately.
+Here is why:
+We have already seen, that the measurement rule relies heavily on the spectral decomposition of the observable.
+So, if the spectral decomposition of two observalbes is completely different, there is nothing we can do, but in this case $Z_1Z_2$ and $X_1X_2$ commute!
+If two matrices commute, then can have a common eigenbasis. What does that mean? It means the following:
+A spectral decomposition of $Z_1Z_2$ is given by $Z_1Z_2 = (+1) \cdot \ket{\Phi^+}\bra{\Phi^+} + (+1) \cdot \ket{\Phi^-}\bra{\Phi^-} + (-1) \cdot \ket{\Psi^+}\bra{\Psi^+} + (-1) \cdot \ket{\Psi^-}\bra{\Psi^-}$.
+A spectral decomposition fo $X_1X_2$ is given by $X_1X_2 = (+1) \cdot \ket{\Phi^+}\bra{\Phi^+} + (-1) \cdot \ket{\Phi^-}\bra{\Phi^-} + (+1) \cdot \ket{\Psi^+}\bra{\Psi^+} + (-1) \cdot \ket{\Psi^-}\bra{\Psi^-}$.
+As we can see the projectors/eigenspaces are exactly the same, only the eigenvalues differ.
+We have also learned that here the eigenvalues (+1) and (-1) are degenerate and we cannot directly infer the post-measurement state from them. (We saw this, when we looked at the identity as an observable)
+So what, can we do about this?
+We can do here is define an observable $M = 2 Z_1Z_2 + X_1X_2$.
+It has the spectral decompostion $M = (+3) \ket{\Phi^+}\bra{\Phi^+} + (+1) \cdot \ket{\Phi^-}\bra{\Phi^-} + (-1) \cdot \ket{\Psi^+}\bra{\Psi^+} + (-3) \cdot \ket{\Psi^-}\bra{\Psi^-}$.
+Here we can differentiate all eigenspaces again:
+If we measure +3, we know that we have \ket{\Phi^+}\bra{\Phi^+}, meaning in of the original observables $Z_1Z_2$ and $X_1X_2$ we would have measure +1 for both.
+If we measure +1, we know that we have \ket{\Phi^-}\bra{\Phi^-}, meaning in of the original observables we would have measured +1 for $Z_1Z_2$ and -1 for $X_1X_2$.
+If we measure -1, we know that we have \ket{\Phi^-}\bra{\Phi^-}, meaning in of the original observables we would have measured -1 for $Z_1Z_2$ and +1 for $X_1X_2$.
+If we measure -3, we know that we have \ket{\Phi^-}\bra{\Phi^-}, meaning in of the original observables we would have measured -1 for $Z_1Z_2$ and -1 for $X_1X_2$.
+This way, we can have both measurement results simultaneously. This only works, when the original observalbes commute! Because they need a common eigenbasis.
+Such a (or any kind of) grouping of observables is called a measurement group, i.e. for this $H$ we have one measurement group consiting of both observables $X_1X_2$ and $Z_1Z_2$.
+In general, there are more than one group, when there is no common eigenbasis for all observables.
 
+Note: In general, the strategy we have used here for measuring the expectation value of a Hamiltonian, does not fundamentally depend on Pauli strings, although in quantum computing they are by far the most practical choice.
+The same idea works whenever we have observables (A_i) whose spectral decompositions are known and which we can measure efficiently.
 
-
-In general, the strategy does not fundamentally depend on Pauli strings, although in quantum computing they are by far the most practical choice. The same idea works whenever we have observables (A_i) whose spectral decompositions are known and which we can measure efficiently.
-
-If
-[
-H = \sum_i c_i A_i,
-]
-then by linearity of expectation,
-[
-\langle \phi|H|\phi\rangle
-==========================
-
-\sum_i c_i \langle \phi|A_i|\phi\rangle.
-]
-So we can estimate each expectation value (\langle \phi|A_i|\phi\rangle) separately and then combine the estimates classically.
-
-Pauli strings are especially useful because they form a basis for all observables on (n) qubits, their eigenvalues are simple, and they can be measured using only single-qubit basis changes followed by computational-basis measurements.
-
+If $H = \sum_i c_i A_i $ then by linearity of expectation,
+$$
+\ket{\phi}H \bra{\phi} =
+\sum_i c_i \ket{\phi}A_i\bra{\phi}.
+$$
+So we can estimate each expectation value $\ket{\phi}A_i\bra{\phi}$ separately and then combine the estimates classically.
+Pauli strings are especially useful because they form a basis for all observables on (n) qubits, their eigenvalues are simple and they can be measured using only single-qubit basis changes followed by computational-basis measurements.
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
