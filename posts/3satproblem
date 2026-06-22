@@ -1,4 +1,4 @@
-     Today, we will be having a look at the 3-SAT problem. Why?
+Today, we will be having a look at the 3-SAT problem. Why?
 
 1. It is NP-complete, but still very simple
 2. You can control its size: n = number of variables, m = number of clauses,
