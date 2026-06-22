@@ -319,8 +319,25 @@ Pauli strings are especially useful because they form a basis for all observable
 Knowing all this we can finally conclude the following:
 3SAT-Hamiltonians are of the form:
 $$
-H = \prod_C 
+H = \sum_C H_C
 $$
+where each $H_C$ is given by a product over terms $\frac{I + Z_i}{2}\frac{I - Z_j}{2}...$.
+
+To measure the expetation value, we can use the Pauli decomposition of $H$.
+We can easily see that $H$ already only consists of sums of I or Z_iZ_j... Pauli strings.
+We only need to make measurements of Z-only Paul strings.
+
+Furthermore, all these Z-only Pauli strings commute, meaning we can measure them all simultaneously and there is only one measurement group.
+The common eigenbasis is the computational basis.
+
+This is spectacular news, because now we can simply make a computational basis state measurement, i.e. measure the observables $Z_1$, $Z_2$, ..., $Z_n$ simulatneaosly to get the correct post-measurement state.
+Because the post-measurement state is a simple bit string, we can plug that bit string in to the original energy function, before we translated it into a Hamiltonian.
+For this we can get the corresponding energy value.
+
+Following this tutorial so far, this last part might should be different, where we first care about the eigenvalue to differentiate the between the post-measurement states and directly have the energy from there.
+But if you play that though you will see that the above is in practice the most efficient way of doing it.
+
+
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
