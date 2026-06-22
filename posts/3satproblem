@@ -337,7 +337,6 @@ For this we can get the corresponding energy value.
 Following this tutorial so far, this last part might should be different, where we first care about the eigenvalue to differentiate the between the post-measurement states and directly have the energy from there.
 But if you play that though you will see that the above is in practice the most efficient way of doing it.
 
-
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
