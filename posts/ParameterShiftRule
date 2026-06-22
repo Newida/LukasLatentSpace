@@ -1,0 +1,30 @@
+In this post, we are going to have a look at the paremter-shfit rule.
+
+# Problem set up
+Assume you have a loss function $f(\theta) = \bra{\phi(\theta)}H\ket{\phi(\theta)}$.
+The quantum state $\ket{\phi}$ is given by a parametric circuit $\ket{\phi(\theta)} = U(\theta) \ket{0}$.
+The parameters of that circuit are given by $\theta$.
+Our goal is to minimize this function.
+
+# Issues
+A usual approach, especially for machine learning people, is to use gradient descent.
+But because the quantum state lives in an exponential state space $2^n$, this is very inefficient.
+
+Instead, we know a quantum circuit $C_\theta$ with parameters $\theta$ that implements the operation $U(\theta) \ket{0}$.
+To minimize $f(\theta)$, we then only need to update the parameters of the circuit $C_\theta$, where the complexit is then mainly based on the number of parameters in the circuit.
+The central question is therefore how to update the circuit parameters $\theta$ without explicitly constructing or differentiating the exponentially large state vector $\ket{\phi(\theta)}$.
+
+# The gradient
+Let $U(C)$ be a function that maps the circuit $C$ to its unitary operator representation in the canonical basis. Then we can rewrite the $f(\theta)$ as
+$$
+f(\theta) = \bra{0}U(C_\theta)^\dagger H U(C_\theta)\ket{0}
+$$
+The gradient with respect to a parameter (\theta_i) is then given by:
+$$
+\bra{0} \frac{\partial U(C_\theta)^\dagger}{\partial \theta_i} H U(C_\theta) + U(C_\theta)^\dagger H \frac{\partial U(C_\theta)}{\partial \theta_i} \ket{0}
+$$
+The question is then, how does $\frac{\partial U(C_\theta)}{\partial \theta_i}$ look like?
+
+----------------------------------------------------------------------------------------------------
+Author: Lukas Theißinger (Human)
+Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
