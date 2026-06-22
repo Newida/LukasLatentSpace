@@ -315,6 +315,12 @@ $$
 So we can estimate each expectation value $\ket{\phi}A_i\bra{\phi}$ separately and then combine the estimates classically.
 Pauli strings are especially useful because they form a basis for all observables on (n) qubits, their eigenvalues are simple and they can be measured using only single-qubit basis changes followed by computational-basis measurements.
 
+# Expectation values of 3SAT-Hamiltonians
+Knowing all this we can finally conclude the following:
+3SAT-Hamiltonians are of the form:
+$$
+H = \prod_C 
+$$
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de
