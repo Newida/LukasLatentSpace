@@ -59,6 +59,8 @@ This requires us to know the Pauli string decomposition of $B$, which is actuall
 Then from there we can apply everthing we learned in the 3satproblem post: 1. Simplify $B$ by seeing what Pauli strings commute with $V$, 2. Create measurement groups 3. From the measurements reconstruct the original output.
 This is a great exercise for someone who wants to become more familiar with this, it can also be easily solved with ChatGPT.
 
+As a quick estimate, this method requires us to measure every Pauli string term in $H$ that anticommutes with $V$. It is classically cheap to figure out which terms these are, but we still need to do a lot of individual measurement runs.
+
 ## Parameter-shift rule
 
 
