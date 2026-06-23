@@ -58,6 +58,12 @@ If the quantum computer could directly do that, that would be great. Unfortunate
 We will look at a deeper and very imporant analysis of this idea later. First, we are going to introduce the main thing, we came here to learn...
 
 ## Parameter-shift rule
+The main idea is to use the spectral decomposition of $V = \sum_\lambda \Pi_\lambda$. Then $U = \sum_\lambda \exp(-i \theta \lambda) \Pi_\lambda$.
+Plugging this into our objective function we get:
+$$
+f(\theta) = \sum_{\lambda, \mu} \exp(-i \theta (\mu - \lambda) \bra{0}\Pi_\lambda H \Pi_\mu \ket{0}
+$$
+
 
 
 # Cost comparison: Measurement vs Parameter-shift rule
