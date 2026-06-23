@@ -46,7 +46,7 @@ $$
 
 The gradient of this is given by:
 $$
-\frac{d \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}}{d\theta_1} = i \bra{0} U(G_1(\theta_1))^\dagger [V, H] U \ket{0}
+\frac{d \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}}{d\theta_1} = i \bra{0} U(G_1(\theta_1))^\dagger [V, H] U(G_1(\theta_1)) \ket{0}
 $$
 where $[V, H] = VH - HV$.
 Importantly this means, if $[V, H] = 0 \iff \frac{f(\theta)}{d \theta} = 0$ 
@@ -58,10 +58,9 @@ If the quantum computer could directly do that, that would be great. Unfortunate
 We will look at a deeper and very imporant analysis of this idea later. First, we are going to introduce the main thing, we came here to learn...
 
 ## Parameter-shift rule
-The main idea is to use the spectral decomposition of $V = \sum_\lambda \Pi_\lambda$. Then $U = \sum_\lambda \exp(-i \theta \lambda) \Pi_\lambda$.
-Plugging this into our objective function we get:
+The main idea is to use the spectral decomposition of $V = \sum_\lambda \lambda \Pi_\lambda$. Plugging that into the derivative we get:
 $$
-f(\theta) = \sum_{\lambda, \mu} \exp(-i \theta (\mu - \lambda) \bra{0}\Pi_\lambda H \Pi_\mu \ket{0}
+i \bra{0} U(G_1(\theta_1))^\dagger [V, H] U(G_1(\theta_1)) \ket{0} = i \sum_{a,b} (\lambda_a - \lambda_b) \exp(i \theta(\lambda_a - \lambda_b)) \bra{0}\Pi_a H \Pi_b\ket{0}
 $$
 
 
