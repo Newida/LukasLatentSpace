@@ -52,9 +52,15 @@ where $[V, H] = VH - HV$.
 Importantly this means, if $[V, H] = 0 \iff \frac{f(\theta)}{d \theta} = 0$ 
 
 # Calculating the derivative
-
 ## By measuremenet
-The first idea, that comes to mind is using measurements with the new observable $ B = i [V, H]$ and the state $\phi(\theta) = U(C_\theta) \ket{0}$ to estimate the value of $i \bra{0} U(G_1(\theta_1))^\dagger i[V, H] U \ket{0}$.
+The first idea, that comes to mind is using measurements with the new observable $B = i [V, H]$ and the state $\phi(\theta) = U(C_\theta) \ket{0}$ to estimate the value of $i \bra{0} U(G_1(\theta_1))^\dagger i[V, H] U \ket{0}$.
+If the quantum computer could directly do that, that would be great. Unfortunately, as we have learned in a previous post (3satproblem), we usually assume that the quantum computer can only do canonical basis measurements.
+This requires us to know the Pauli string decomposition of $B$, which is actually not that hard to calculate, given that we know the Pauli string decomposition of $H$.
+Then from there we can apply everthing we learned in the 3satproblem post: 1. Simplify $B$ by seeing what Pauli strings commute with $V$, 2. Create measurement groups 3. From the measurements reconstruct the original output.
+This is a great exercise for someone who wants to become more familiar with this, it can also be easily solved with ChatGPT.
+
+## Parameter-shift rule
+
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
