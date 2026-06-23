@@ -46,10 +46,15 @@ $$
 
 The gradient of this is given by:
 $$
-\frac{d \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}}{d\theta_1} = i \bra{0}\bra{0} U(G_1(\theta_1))^\dagger [V, H] U \ket{0}
+\frac{d \bra{0} U(G_1(\theta_1))^\dagger H U(G_1(\theta_1)) \ket{0}}{d\theta_1} = i \bra{0} U(G_1(\theta_1))^\dagger [V, H] U \ket{0}
 $$
 where $[V, H] = VH - HV$.
 Importantly this means, if $[V, H] = 0 \iff \frac{f(\theta)}{d \theta} = 0$ 
+
+# Calculating the derivative
+
+## By measuremenet
+The first idea, that comes to mind is using measurements with the new observable $ B = i [V, H]$ and the state $\phi(\theta) = U(C_\theta) \ket{0}$ to estimate the value of $i \bra{0} U(G_1(\theta_1))^\dagger i[V, H] U \ket{0}$.
 
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
