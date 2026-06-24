@@ -55,14 +55,30 @@ Importantly this means, if $[V, H] = 0 \iff \frac{f(\theta)}{d \theta} = 0$
 ## By measuremenet
 The first idea, that comes to mind is using measurements with the new observable $B = i [V, H]$ and the state $\phi(\theta) = U(C_\theta) \ket{0}$ to estimate the value of $i \bra{0} U(G_1(\theta_1))^\dagger i[V, H] U \ket{0}$.
 If the quantum computer could directly do that, that would be great. Unfortunately, as we have learned in a previous post (3satproblem), we usually assume that the quantum computer can only do canonical basis measurements.
-We will look at a deeper and very imporant analysis of this idea later. First, we are going to introduce the main thing, we came here to learn...
+
+First, let us look at a 3SAT Example:
+Assume $H = \frac{1}{8}(I + Z_1 - Z_2 + Z_5 - Z_1Z_2 + Z_1Z_5 - Z_2Z_5 - Z_1Z_2Z_5$ this is a Z-only Pauli string Hamiltonian.
+Assume for the circuit $C = [(R_X(\theta_1), 1), (CX, (1,2)), R_Y(\theta_2, 1)]$.
+Then we want to calculate the two derivatives of $f(\theta_1, \theta_2) = \bra{0}U(C)^\dagger H U(C)\ket{0}$ with respect to $\theta_1$ and $\theta_2$.
+For $\theta_1$ we know that $R_X = \exp(-i \theta \frac{X}{2})$, which means that $V_1 = \frac{X}{2}$.
+For $\theta_2$ we have $R_Y = \exp(-i \theta \frac{Y}{2}$ and $V_2 = \frac{Y}{2}$.
+
+The gradient is then given by:
+$ \frac{df}{d\theta_1} = \bra{0}
 
 ## Parameter-shift rule
-The main idea is to use the spectral decomposition of $V = \sum_\lambda \lambda \Pi_\lambda$. Plugging that into the derivative we get:
+Things here become really involved and I could not find another more intuitive way of explaining it. You have to know about finite Fourier series.
+What is that?
+A finite Fourier series is a function that can be written as a finite sum of complex exponentials:
 $$
-i \bra{0} U(G_1(\theta_1))^\dagger [V, H] U(G_1(\theta_1)) \ket{0} = i \sum_{a,b} (\lambda_a - \lambda_b) \exp(i \theta(\lambda_a - \lambda_b)) \bra{0}\Pi_a H \Pi_b\ket{0}
+f(\theta) = \sum_{\omega \in \Omega} c_omega \exp(i\omega \theta)
 $$
+Here $\Omega$ is a finite set.
 
+
+
+We can show that our given objective function is indeed a finite Fourier series.
+...
 
 
 # Cost comparison: Measurement vs Parameter-shift rule
