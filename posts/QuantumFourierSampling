@@ -2,7 +2,8 @@ If you were ever interested in quantum computing you probably know about the mos
 
 These things are then explained in terms of quantum circuit models and there is most likely one sentence saying, "btw. this is Fourier Transform".
 
-Since I find the quantum circuits models quite unintuitive to find and you basically are presented with the solutuin and only shownt the math that it works, maybe we can find an untuitive version starting from the Fourier Transform to these problems and their quantum solution.
+Since I find the quantum circuits models quite unintuitive to find and you basically are presented with the solution and only shown some math that it works.
+Maybe, we can find a more intuitive version to these problems when starting from the Fourier Transform developing their quantum solution.
 
 Let us start with Deutsch problem
 
