@@ -345,17 +345,54 @@ def fit_shell_mixture(counts: np.ndarray, n: int, iters: int = 2000) -> np.ndarr
     return spectral_filter(counts / m, n, h)
 
 
+def _kernel_loo(dist: np.ndarray, kernel: np.ndarray) -> float:
+    """Leave-one-out log-likelihood of the kernel estimator with radial kernel k(d)."""
+    m = dist.shape[0]
+    K = kernel[dist]
+    np.fill_diagonal(K, 0.0)
+    with np.errstate(divide="ignore"):
+        return float(np.sum(np.log(K.sum(axis=1) / (m - 1))))
+
+
+def _heat_kernel(n: int, theta: float) -> np.ndarray:
+    d = np.arange(n + 1)
+    return theta**d * (1 - theta) ** (n - d)
+
+
+def _tikhonov_kernel(n: int, mu: float) -> np.ndarray:
+    if mu == 0:
+        return (np.arange(n + 1) == 0).astype(float)
+    return tikhonov_distance_kernel(n, mu)
+
+
+def _addalpha_loo(sample: np.ndarray, counts: np.ndarray, alpha: float, n: int) -> float:
+    m = sample.size
+    with np.errstate(divide="ignore"):
+        return float(np.sum(np.log((counts[sample] - 1 + alpha) / (m - 1 + alpha * 2**n))))
+
+
 def _estimators(n: int):
+    """name -> (grid, fit(counts, h), loo(sample, counts, dist, h) or None).
+
+    Estimators with a LOO scorer are tuned by full-data leave-one-out
+    log-likelihood (the criterion the learned filter optimises); the others by
+    the quadratic score on a validation split. Grids include zero smoothing."""
     d = 2**n
     return {
-        "empirical": ([None], lambda c, h: c / c.sum()),
-        "add-alpha": (np.logspace(-3, 1, 9), lambda c, a: (c + a) / (c.sum() + a * d)),
-        "heat (Aitchison-Aitken)": (np.linspace(0.005, 0.35, 15),
-                                    lambda c, th: heat_smooth(c / c.sum(), n, -0.5 * math.log(1 - 2 * th))),
-        "Tikhonov (P2)": (np.logspace(-3, 1.5, 15), lambda c, mu: tikhonov_smooth(c / c.sum(), n, mu)),
+        "empirical": ([None], lambda c, h: c / c.sum(), None),
+        "add-alpha": (np.concatenate([[0.0], np.logspace(-3, 1, 9)]),
+                      lambda c, a: (c + a) / (c.sum() + a * d),
+                      lambda s, c, D, a: _addalpha_loo(s, c, a, n)),
+        "heat (Aitchison-Aitken)": (np.concatenate([[0.0], np.linspace(0.005, 0.35, 15)]),
+                                    lambda c, th: heat_smooth(c / c.sum(), n, -0.5 * math.log(1 - 2 * th)),
+                                    lambda s, c, D, th: _kernel_loo(D, _heat_kernel(n, th))),
+        "Tikhonov (P2)": (np.concatenate([[0.0], np.logspace(-3, 1.5, 15)]),
+                          lambda c, mu: tikhonov_smooth(c / c.sum(), n, mu),
+                          lambda s, c, D, mu: _kernel_loo(D, _tikhonov_kernel(n, mu))),
         "penalised MLE (P1)": (np.logspace(-6, 2, 9),
-                               lambda c, a: solve_p1(c, n, a * c.sum() ** 2 / n, tol=1e-7, max_iter=4000)[0]),
-        "learned isotropic (LOO-EM)": ([None], lambda c, h: fit_shell_mixture(c, n)),
+                               lambda c, a: solve_p1(c, n, a * c.sum() ** 2 / n, tol=1e-7, max_iter=4000)[0],
+                               None),
+        "learned isotropic (LOO-EM)": ([None], lambda c, h: fit_shell_mixture(c, n), None),
     }
 
 
@@ -378,8 +415,12 @@ def e4(only: list[str] | None = None) -> None:
                 val, train = sample[perm[:n_val]], sample[perm[n_val:]]
                 c_train = counts_from_samples(train, n)
                 c_all = counts_from_samples(sample, n)
-                for name, (grid, fit) in estimators.items():
-                    scores = [_quadratic_score(fit(c_train, h), val) for h in grid]
+                dist = popcount(n)[sample[:, None] ^ sample[None, :]]
+                for name, (grid, fit, loo) in estimators.items():
+                    if loo is not None:
+                        scores = [-loo(sample, c_all, dist, h) for h in grid]
+                    else:
+                        scores = [_quadratic_score(fit(c_train, h), val) for h in grid]
                     best = grid[int(np.argmin(scores))]
                     q = fit(c_all, best)
                     q = np.maximum(q, 0.0)
@@ -396,14 +437,27 @@ def e4(only: list[str] | None = None) -> None:
         tv = np.array(rec["tv"])
         kl = np.array(rec["kl"])
         summary[key] = {
-            "tv_mean": tv.mean(), "tv_se": tv.std(ddof=1) / math.sqrt(tv.size),
+            "tv_mean": tv.mean(), "tv_se": tv.std(ddof=1) / math.sqrt(tv.size), "tv": rec["tv"],
             "kl_median": float(np.median(kl)), "kl_finite_frac": float(np.isfinite(kl).mean()),
             "invalid_mass_mean": float(np.mean(rec["invalid"])), "h": rec["h"],
         }
     if only is not None:
         with open(RESULTS / "e4_generalisation.json") as f:
             summary = {**json.load(f)["summary"], **summary}
-    save("e4_generalisation", {"n": n, "ms": ms, "seeds": len(seeds), "summary": summary})
+    # Paired differences (same seeds, same samples): learned filter minus each other estimator.
+    paired = {}
+    learned = "learned isotropic (LOO-EM)"
+    for kind in ("clusters", "checksum"):
+        for m in ms:
+            base = np.array(summary[f"{kind}|{m}|{learned}"]["tv"])
+            for name in _estimators(n):
+                if name == learned:
+                    continue
+                diff = base - np.array(summary[f"{kind}|{m}|{name}"]["tv"])
+                paired[f"{kind}|{m}|{name}"] = {"mean": float(diff.mean()),
+                                                "se": float(diff.std(ddof=1) / math.sqrt(diff.size)),
+                                                "wins": int((diff < 0).sum())}
+    save("e4_generalisation", {"n": n, "ms": ms, "seeds": len(seeds), "summary": summary, "paired": paired})
 
     names = list(_estimators(n))
     colors = ["#9aa5b1", "#718096", "#38a169", "#dd6b20", "#2b6cb0", "#805ad5"]
