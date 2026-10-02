@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 390" width="820" height="390" role="img" aria-labelledby="title description">
+<title id="title">A MaxCut problem becomes a cost landscape on the Hamming cube</title>
+<desc id="description">The path 1–2–3 is partitioned by the bitstring 010: vertices 1 and 3 are on side 0 and vertex 2 on side 1. Both problem edges are cut. The cube has eight assignments and twelve edges that flip one bit. In order 000, 001, 010, 011, 100, 101, 110, 111, the costs are 0, 1, 2, 1, 1, 2, 1, 0. A blue ring selects 010 and blue edges show its three neighbors. The maximum cuts are 010 and 101.</desc>
+<style>
+  :root { --bg:#fff; --ink:#1f2328; --muted:#59636e; --rule:#d1d9e0; --low:#f6f8fa; --mid:#0e7a88; --high:#123f5c; --accent:#0969da; --plum:#9b3d8a; }
+  @media (prefers-color-scheme:dark) { :root { --bg:#0d1117; --ink:#e6edf3; --muted:#9198a1; --rule:#3d444d; --low:#151b23; --mid:#45c4d1; --high:#b6f0f5; --accent:#4493f8; --plum:#d585c6; } }
+  text { font-family:system-ui,sans-serif; fill:var(--ink); }
+  .heading { font-size:16px; font-weight:600; }
+  .note { font-size:14px; fill:var(--muted); }
+  .bits { font:14px ui-monospace,monospace; }
+  .edge { stroke:var(--rule); stroke-width:2; }
+  .neighbor { stroke:var(--accent); stroke-width:2.5; }
+  .cost { font:500 15px ui-monospace,monospace; fill:var(--bg); }
+  .zero { fill:var(--ink); }
+  .node-label { fill:var(--bg); font-size:16px; font-weight:600; }
+</style>
+<rect width="820" height="390" rx="8" fill="var(--bg)"/>
+<text x="28" y="30" class="heading">One partition of G → one corner of Q₃</text>
+<text x="28" y="50" class="note">Problem graph G · 3 vertices</text>
+<text x="352" y="50" class="note">Search graph Q₃ · 8 assignments</text>
+<line x1="295" x2="295" y1="82" y2="319" stroke="var(--rule)"/>
+
+<line x1="58" y1="246" x2="140" y2="126" stroke="var(--ink)" stroke-width="3"/>
+<text x="84.0" y="186.0" class="bits" text-anchor="middle">1</text>
+<line x1="140" y1="126" x2="222" y2="246" stroke="var(--ink)" stroke-width="3"/>
+<text x="196.0" y="186.0" class="bits" text-anchor="middle">1</text>
+<circle cx="58" cy="246" r="21" fill="var(--mid)"/>
+<text x="58" y="251" class="node-label" text-anchor="middle">1</text>
+<text x="58" y="289" class="bits" text-anchor="middle">x₁ = 0</text>
+<circle cx="140" cy="126" r="21" fill="var(--plum)"/>
+<text x="140" y="131" class="node-label" text-anchor="middle">2</text>
+<text x="140" y="169" class="bits" text-anchor="middle">x₂ = 1</text>
+<circle cx="222" cy="246" r="21" fill="var(--mid)"/>
+<text x="222" y="251" class="node-label" text-anchor="middle">3</text>
+<text x="222" y="289" class="bits" text-anchor="middle">x₃ = 0</text>
+<text x="140" y="322" class="bits" text-anchor="middle">C(010) = 1 + 1 = 2</text>
+<text x="140" y="348" class="note" text-anchor="middle">Side 0: {1, 3} · Side 1: {2}</text>
+<line x1="408" y1="310" x2="598" y2="310" class="edge"/>
+<line x1="408" y1="310" x2="408" y2="175" class="edge neighbor"/>
+<line x1="408" y1="310" x2="503" y2="240" class="edge"/>
+<line x1="598" y1="310" x2="598" y2="175" class="edge"/>
+<line x1="598" y1="310" x2="693" y2="240" class="edge"/>
+<line x1="408" y1="175" x2="598" y2="175" class="edge neighbor"/>
+<line x1="408" y1="175" x2="503" y2="105" class="edge neighbor"/>
+<line x1="598" y1="175" x2="693" y2="105" class="edge"/>
+<line x1="503" y1="240" x2="693" y2="240" class="edge"/>
+<line x1="503" y1="240" x2="503" y2="105" class="edge"/>
+<line x1="693" y1="240" x2="693" y2="105" class="edge"/>
+<line x1="503" y1="105" x2="693" y2="105" class="edge"/>
+<circle cx="408" cy="310" r="21" fill="var(--low)" stroke="var(--muted)"/>
+<text x="408" y="276" class="bits" text-anchor="middle">000</text>
+<text x="408" y="315" class="cost zero" text-anchor="middle">0</text>
+<circle cx="598" cy="310" r="21" fill="var(--mid)" stroke="var(--muted)"/>
+<text x="598" y="276" class="bits" text-anchor="middle">100</text>
+<text x="598" y="315" class="cost" text-anchor="middle">1</text>
+<circle cx="408" cy="175" r="27" fill="none" stroke="var(--accent)" stroke-width="3"/>
+<circle cx="408" cy="175" r="21" fill="var(--high)" stroke="var(--muted)"/>
+<text x="408" y="141" class="bits" text-anchor="middle">010</text>
+<text x="408" y="180" class="cost" text-anchor="middle">2</text>
+<circle cx="598" cy="175" r="21" fill="var(--mid)" stroke="var(--muted)"/>
+<text x="598" y="141" class="bits" text-anchor="middle">110</text>
+<text x="598" y="180" class="cost" text-anchor="middle">1</text>
+<circle cx="503" cy="240" r="21" fill="var(--mid)" stroke="var(--muted)"/>
+<text x="503" y="206" class="bits" text-anchor="middle">001</text>
+<text x="503" y="245" class="cost" text-anchor="middle">1</text>
+<circle cx="693" cy="240" r="21" fill="var(--high)" stroke="var(--muted)"/>
+<text x="693" y="206" class="bits" text-anchor="middle">101</text>
+<text x="693" y="245" class="cost" text-anchor="middle">2</text>
+<circle cx="503" cy="105" r="21" fill="var(--mid)" stroke="var(--muted)"/>
+<text x="503" y="71" class="bits" text-anchor="middle">011</text>
+<text x="503" y="110" class="cost" text-anchor="middle">1</text>
+<circle cx="693" cy="105" r="21" fill="var(--low)" stroke="var(--muted)"/>
+<text x="693" y="71" class="bits" text-anchor="middle">111</text>
+<text x="693" y="110" class="cost zero" text-anchor="middle">0</text>
+<text x="555" y="350" class="note" text-anchor="middle">Corner color and number = cut size C(x)</text>
+<text x="410" y="377" class="note" text-anchor="middle">Maximum cuts: 010 and 101. Blue ring: selected assignment.</text>
+</svg>

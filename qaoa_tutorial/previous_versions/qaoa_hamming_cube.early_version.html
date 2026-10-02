@@ -1,0 +1,825 @@
+<title>QAOA on the Hamming Cube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&family=STIX+Two+Text:ital@0;1&display=swap">
+<style>
+/* Layout: one reading column (~68ch) with figures breaking out to the full 1080px frame; sign colours (+1 / -1) double as the page accents. */
+:root {
+  --bg: #f2f5f7;
+  --panel: #ffffff;
+  --ink: #16202b;
+  --muted: #566271;
+  --rule: #d3dae1;
+  --pos: #0e7a88;
+  --neg: #9b3d8a;
+  --hl: #e3eef0;
+  --heat-lo: #eef2f5;
+  --heat-mid: #5aa9b3;
+  --heat-hi: #123f5c;
+  --phase-s: 62%;
+  --phase-l: 42%;
+  --f-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-math: "STIX Two Text", "Times New Roman", Times, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1319; --panel: #151c24; --ink: #e4e9ef; --muted: #97a3b0; --rule: #28333e;
+    --pos: #45c4d1; --neg: #d585c6; --hl: #16303a;
+    --heat-lo: #151c24; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+    --phase-s: 60%; --phase-l: 64%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1319; --panel: #151c24; --ink: #e4e9ef; --muted: #97a3b0; --rule: #28333e;
+  --pos: #45c4d1; --neg: #d585c6; --hl: #16303a;
+  --heat-lo: #151c24; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+  --phase-s: 60%; --phase-l: 64%;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.62;
+  font-optical-sizing: auto;
+}
+.frame { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 80px; }
+.prose { max-width: 68ch; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.3rem, 5.5vw, 3.6rem); font-weight: 700; letter-spacing: -0.015em; }
+h2 { font-size: 1.75rem; font-weight: 600; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+.prose > * + * { margin-top: 1em; }
+a { color: var(--pos); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--pos); outline-offset: 2px; }
+
+.eyebrow { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lead { font-size: 1.22rem; line-height: 1.5; color: var(--ink); }
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; align-items: center; padding-bottom: 40px; border-bottom: 1px solid var(--rule); }
+.hero-text { display: grid; gap: 18px; min-width: 0; }
+.hero figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+#walsh16 { width: 100%; aspect-ratio: 1 / 1; display: block; }
+@media (max-width: 760px) { .hero { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+section { padding-top: 64px; display: grid; gap: 22px; }
+.sec-head { display: grid; gap: 6px; }
+.sec-num { font-family: var(--f-mono); font-size: 0.8rem; color: var(--pos); letter-spacing: 0.08em; }
+
+/* math, hand-set */
+.m { font-family: var(--f-math); font-size: 1.06em; white-space: nowrap; }
+.m i, i.v { font-family: var(--f-math); font-style: italic; }
+.eq { font-family: var(--f-math); font-size: 1.15rem; padding: 14px 18px; background: var(--panel); border-left: 2px solid var(--pos); overflow-x: auto; white-space: nowrap; max-width: 68ch; }
+.eq i { font-style: italic; }
+.eq .note { font-family: var(--f-body); font-size: 0.85rem; color: var(--muted); margin-left: 1.2em; white-space: normal; }
+code, .mono { font-family: var(--f-mono); font-size: 0.88em; }
+.bit { font-family: var(--f-mono); font-size: 0.9em; letter-spacing: 0.02em; }
+figcaption, .caption { font-size: 0.9rem; color: var(--muted); line-height: 1.5; max-width: 68ch; }
+
+/* Walsh 8x8 grid */
+.walsh { display: grid; grid-template-columns: auto repeat(8, minmax(18px, 34px)) auto; gap: 3px 3px; align-items: center; justify-content: start; overflow-x: auto; padding-bottom: 4px; }
+.walsh .hd { font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); text-align: center; padding-bottom: 2px; }
+.walsh .rl { font-family: var(--f-mono); font-size: 0.82rem; padding-right: 10px; color: var(--ink); }
+.walsh .ev { font-family: var(--f-mono); font-size: 0.82rem; padding-left: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.walsh .t { aspect-ratio: 1 / 1; border-radius: 2px; }
+.walsh .t.p { background: var(--pos); }
+.walsh .t.n { background: var(--neg); }
+.walsh .grp { grid-column: 1 / -1; height: 6px; }
+
+/* interactive figures */
+.lab { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 22px; display: grid; gap: 18px; }
+.lab-title { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; justify-content: space-between; }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.seg button { font: 500 0.85rem var(--f-mono); padding: 7px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.btn { font: 500 0.85rem var(--f-mono); padding: 7px 12px; border: 1px solid var(--rule); border-radius: 4px; background: transparent; color: var(--ink); cursor: pointer; }
+.btn:hover, .seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"]:hover { color: var(--panel); }
+.slider { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.slider label { font-family: var(--f-math); font-style: italic; font-size: 1.1rem; min-width: 1.2em; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--pos); }
+.slider output { font-family: var(--f-mono); font-size: 0.85rem; font-variant-numeric: tabular-nums; min-width: 6.5em; color: var(--muted); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.three { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+@media (max-width: 860px) { .three { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 640px) { .two, .three { grid-template-columns: minmax(0, 1fr); } }
+.panel-label { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+.readouts { display: flex; flex-wrap: wrap; gap: 10px 28px; }
+.ro { display: grid; gap: 1px; }
+.ro .k { font-size: 0.78rem; color: var(--muted); }
+.ro .val { font-family: var(--f-mono); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
+svg .edge { stroke: var(--rule); stroke-width: 2; }
+svg .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+svg .lbl-ink { fill: var(--ink); font-family: var(--f-mono); font-size: 11px; }
+svg .base { stroke: var(--rule); stroke-width: 1; }
+svg .bar-p { fill: var(--pos); }
+svg .bar-n { fill: var(--neg); }
+svg .ref { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 2; }
+svg .dial { fill: none; stroke: var(--rule); stroke-width: 1.2; }
+svg .startring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+svg .vtx { stroke: var(--panel); stroke-width: 1.5; cursor: pointer; }
+svg .gedge { stroke: var(--rule); stroke-width: 2; stroke-dasharray: 4 4; }
+svg .gedge.cut { stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: none; }
+svg .gv0 { fill: var(--pos); }
+svg .gv1 { fill: var(--neg); }
+svg .gvl { fill: var(--panel); font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
+
+#heat { width: 100%; aspect-ratio: 3 / 2; display: block; cursor: crosshair; touch-action: none; }
+.heat-legend { display: flex; align-items: center; gap: 10px; font-family: var(--f-mono); font-size: 0.78rem; color: var(--muted); }
+.heat-legend .ramp { flex: 0 1 180px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, var(--heat-lo), var(--heat-mid), var(--heat-hi)); border: 1px solid var(--rule); }
+
+.pipeline { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+.stage { background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 12px 14px; display: grid; gap: 4px; flex: 1 1 150px; min-width: 0; }
+.stage .op { font-family: var(--f-math); font-size: 1.15rem; }
+.stage .what { font-size: 0.85rem; color: var(--muted); }
+.stage.x { border-top: 3px solid var(--pos); }
+.stage.s { border-top: 3px solid var(--neg); }
+.arrow { align-self: center; color: var(--muted); font-family: var(--f-mono); }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 0.95rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td:first-child { font-weight: 600; }
+.reading { display: grid; gap: 8px; padding-left: 0; list-style: none; margin: 0; }
+.reading li { max-width: 68ch; }
+.lit-h { font-family: var(--f-mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pos); margin-top: 1.4em !important; }
+footer { margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.85rem; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main class="frame">
+  <header class="hero">
+    <div class="hero-text">
+      <div class="eyebrow">A tutorial with two interactive figures</div>
+      <h1>QAOA on the Hamming Cube</h1>
+      <p class="lead">The quantum approximate optimization algorithm looks like a list of gates. Seen on the right stage it is a familiar numerical method: it alternates between the two natural coordinate systems of the bitstring cube, positions and Walsh frequencies, the same way a split-step Fourier solver alternates between position and momentum.</p>
+      <p class="caption">You need linear algebra and a little quantum notation (|<i class="v">x</i>⟩, Pauli <i class="v">X</i> and <i class="v">Z</i>, the Hadamard gate). Everything else is built up here.</p>
+    </div>
+    <figure>
+      <canvas id="walsh16" role="img" aria-label="The 16 by 16 Walsh-Hadamard matrix for four bits, rows ordered by Hamming weight"></canvas>
+      <figcaption>The 16 Walsh characters for <span class="m"><i>n</i> = 4</span>, one per row, sorted by Hamming weight <span class="m">|<i>s</i>|</span>. Teal is +1, plum is −1. Each row is one “frequency” of the cube.</figcaption>
+    </figure>
+  </header>
+
+  <!-- 1 -->
+  <section id="cube">
+    <div class="sec-head"><div class="sec-num">PART 1</div><h2>The stage: bitstrings on a cube</h2></div>
+    <div class="prose">
+      <p>An <i class="v">n</i>-qubit basis state |<i class="v">x</i>⟩ is labelled by a bitstring <span class="m"><i>x</i> ∈ {0,1}<sup><i>n</i></sup></span>. Put the 2<sup><i class="v">n</i></sup> strings on the corners of an <i class="v">n</i>-dimensional cube and join two corners by an edge when they differ in exactly one bit. Walking along edges, the distance between two corners is their Hamming distance. This graph is the <em>Hamming cube</em> <span class="m"><i>Q<sub>n</sub></i></span>.</p>
+      <p>A combinatorial optimization problem is a function on the corners. For MaxCut on a graph <i class="v">G</i>, bit <i class="v">x<sub>i</sub></i> says which side vertex <i class="v">i</i> is on, and <span class="m"><i>C</i>(<i>x</i>)</span> counts the edges whose endpoints land on different sides. The task is to find the corner where <i class="v">C</i> is largest.</p>
+      <p>Moving along one edge of the cube means flipping one bit, which is what the Pauli operator <i class="v">X<sub>i</sub></i> does to a basis state. So the adjacency matrix of the cube is a sum of bit flips:</p>
+    </div>
+    <div class="eq"><i>A</i> = <i>X</i><sub>1</sub> + <i>X</i><sub>2</sub> + ⋯ + <i>X<sub>n</sub></i><span class="note">adjacency matrix of the Hamming cube</span></div>
+    <div class="prose">
+      <p>This is exactly the operator QAOA calls the <em>mixer</em> (usually written <i class="v">B</i>). The mixer is not an arbitrary choice of gates. It is the graph structure of the search space, written in qubit notation. Everything below follows from taking that seriously.</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="fourier">
+    <div class="sec-head"><div class="sec-num">PART 2</div><h2>Fourier analysis on the cube</h2></div>
+    <div class="prose">
+      <p>Under bitwise XOR the corners form a group, <span class="m">ℤ<sub>2</sub><sup><i>n</i></sup></span>, and every group of this kind has its own Fourier transform. Its “sine waves” are the characters</p>
+    </div>
+    <div class="eq"><i>χ<sub>s</sub></i>(<i>x</i>) = (−1)<sup><i>s</i>·<i>x</i></sup>,&nbsp;&nbsp; <i>s</i> ∈ {0,1}<sup><i>n</i></sup><span class="note">one character per frequency <i>s</i></span></div>
+    <div class="prose">
+      <p>The character <i class="v">χ<sub>s</sub></i> changes sign whenever you flip a bit that lies inside the support of <i class="v">s</i>, and ignores all other bits. The Hamming weight <span class="m">|<i>s</i>|</span> therefore plays the role of frequency: <i class="v">χ</i><sub>000</sub> is constant, the weight-1 characters are square waves along one axis, and <i class="v">χ</i><sub>111</sub> changes sign across every edge. The Fourier coefficients of a function are</p>
+    </div>
+    <div class="eq"><i>f̂</i>(<i>s</i>) = 2<sup>−<i>n</i></sup> Σ<sub><i>x</i></sub> <i>f</i>(<i>x</i>) <i>χ<sub>s</sub></i>(<i>x</i>)<span class="note">the Walsh–Hadamard transform</span></div>
+    <div class="prose">
+      <p>On qubits this transform is a gate you already know: <span class="m"><i>H</i><sup>⊗<i>n</i></sup></span>, the Hadamard on every qubit, up to the normalization <span class="m">2<sup>−<i>n</i>/2</sup></span>. Its matrix entries are <span class="m">2<sup>−<i>n</i>/2</sup> <i>χ<sub>s</sub></i>(<i>x</i>)</span>.</p>
+      <p>Now the key identity. Flipping bit <i class="v">i</i> multiplies <i class="v">χ<sub>s</sub></i> by <span class="m">(−1)<sup><i>s<sub>i</sub></i></sup></span>. Summing over all bits, the <span class="m"><i>n</i> − |<i>s</i>|</span> bits outside the support contribute +1 each and the <span class="m">|<i>s</i>|</span> bits inside contribute −1 each:</p>
+    </div>
+    <div class="eq"><i>A</i> <i>χ<sub>s</sub></i> = (<i>n</i> − 2|<i>s</i>|) <i>χ<sub>s</sub></i>,&nbsp;&nbsp;&nbsp; equivalently&nbsp; <i>H</i><sup>⊗<i>n</i></sup> <i>A</i> <i>H</i><sup>⊗<i>n</i></sup> = <i>Z</i><sub>1</sub> + ⋯ + <i>Z<sub>n</sub></i></div>
+    <div class="prose">
+      <p>The Fourier transform diagonalizes the cube, exactly as ordinary Fourier modes diagonalize the Laplacian on a line. In gate language it is the familiar <span class="m"><i>HXH</i> = <i>Z</i></span>, applied to every qubit at once.</p>
+    </div>
+    <figure style="margin:0; display:grid; gap:10px;">
+      <div class="walsh" id="walsh8" role="img" aria-label="Walsh-Hadamard matrix for three bits with the cube eigenvalue of each row"></div>
+      <figcaption>The eight characters of <span class="m"><i>Q</i><sub>3</sub></span>. Rows are frequencies <i class="v">s</i>, grouped by weight; columns are corners <i class="v">x</i>. The right column is each row’s eigenvalue under the adjacency matrix, <span class="m"><i>n</i> − 2|<i>s</i>|</span>. Low weight means smooth over the cube and a large eigenvalue.</figcaption>
+    </figure>
+    <div class="prose">
+      <h3>Cost functions have sparse spectra</h3>
+      <p>MaxCut is especially clean in this basis. Write <span class="m"><i>e<sub>i</sub></i></span> for the string with a single 1 at position <i class="v">i</i>. Edge <span class="m">(<i>i</i>, <i>j</i>)</span> is cut when <span class="m"><i>x<sub>i</sub></i> ≠ <i>x<sub>j</sub></i></span>, which is <span class="m">(1 − <i>χ</i><sub><i>e<sub>i</sub></i>⊕<i>e<sub>j</sub></i></sub>(<i>x</i>))/2</span>. Summing over edges:</p>
+    </div>
+    <div class="eq"><i>C</i>(<i>x</i>) = |<i>E</i>|/2 − ½ Σ<sub>(<i>i</i>,<i>j</i>)∈<i>E</i></sub> <i>χ</i><sub><i>e<sub>i</sub></i>⊕<i>e<sub>j</sub></i></sub>(<i>x</i>)</div>
+    <div class="prose">
+      <p>The MaxCut objective has Fourier weight only at frequency 0 and at weight-2 frequencies, one per graph edge. Many optimization problems are low-degree like this: their spectra are sparse and concentrated at small <span class="m">|<i>s</i>|</span>. That sparsity is what makes QAOA’s operators local and implementable as short circuits.</p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="heat">
+    <div class="sec-head"><div class="sec-num">PART 3</div><h2>Classical diffusion: heat flow on the cube</h2></div>
+    <div class="prose">
+      <p>Start with something classical. Let a walker sit on a corner and let each of its bits flip independently at rate 1. Its probability distribution <i class="v">p<sub>t</sub></i> obeys the heat equation on the cube,</p>
+    </div>
+    <div class="eq"><i>dp</i>/<i>dt</i> = −<i>L p</i>,&nbsp;&nbsp;&nbsp; <i>L</i> = <i>n I</i> − <i>A</i><span class="note">graph Laplacian of the cube</span></div>
+    <div class="prose">
+      <p>Because <i class="v">A</i> is diagonal in the Fourier basis, so is <i class="v">L</i>, with eigenvalue <span class="m">2|<i>s</i>|</span>. Each Fourier mode just decays:</p>
+    </div>
+    <div class="eq"><i>p̂<sub>t</sub></i>(<i>s</i>) = e<sup>−2|<i>s</i>|<i>t</i></sup> <i>p̂</i><sub>0</sub>(<i>s</i>)</div>
+    <div class="prose">
+      <p>High frequencies die first, and as <span class="m"><i>t</i> → ∞</span> only the constant mode survives: the uniform distribution. In position space the same evolution factorizes over bits. After time <i class="v">t</i>, every bit has flipped with probability <span class="m"><i>q<sub>t</sub></i> = (1 − e<sup>−2<i>t</i></sup>)/2</span>, independently of the others. This is the noise operator of Boolean Fourier analysis, and it is the mutation step of a genetic algorithm.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="mixer">
+    <div class="sec-head"><div class="sec-num">PART 4</div><h2>Quantum diffusion: the mixer</h2></div>
+    <div class="prose">
+      <p>Replace the heat equation by the Schrödinger equation on the same graph: <span class="m"><i>i dψ</i>/<i>dβ</i> = <i>A ψ</i></span>. Its solution is the QAOA mixer, <span class="m"><i>ψ<sub>β</sub></i> = e<sup>−<i>iβA</i></sup> <i>ψ</i><sub>0</sub></span>, a continuous-time quantum walk on the cube. In the Fourier basis:</p>
+    </div>
+    <div class="eq"><i>ψ̂<sub>β</sub></i>(<i>s</i>) = e<sup>−<i>iβ</i>(<i>n</i> − 2|<i>s</i>|)</sup> <i>ψ̂</i><sub>0</sub>(<i>s</i>)</div>
+    <div class="prose">
+      <p>Nothing decays. Every mode keeps its magnitude and rotates its phase at a speed set by its frequency. Classical diffusion forgets the starting point by damping fine structure; the quantum walk keeps all of it and turns it into phase.</p>
+      <p>Position space again factorizes, now over amplitudes. Since <span class="m">e<sup>−<i>iβX</i></sup> = cos <i>β</i> · <i>I</i> − <i>i</i> sin <i>β</i> · <i>X</i></span> on each qubit, starting from |<i class="v">x</i>⟩ the amplitude to reach a corner at Hamming distance <i class="v">k</i> is</p>
+    </div>
+    <div class="eq">(cos <i>β</i>)<sup><i>n</i>−<i>k</i></sup> (−<i>i</i> sin <i>β</i>)<sup><i>k</i></sup></div>
+    <div class="prose">
+      <p>Measured right away, this looks like classical bit flipping with probability <span class="m">sin<sup>2</sup><i>β</i></span>. The difference is the phase <span class="m">(−<i>i</i>)<sup><i>k</i></sup></span>, which lets amplitudes from different paths interfere as soon as anything else acts on the state. One more difference stands out at <span class="m"><i>β</i> = π/2</span>: every bit flips with certainty and the walk lands on the opposite corner exactly. The classical walk never puts more than <span class="m">2<sup>−<i>n</i></sup></span> probability there. Halfway, at <span class="m"><i>β</i> = π/4</span>, each bit flips with probability exactly ½ and the measured distribution is exactly uniform. The classical walk only approaches uniform as <span class="m"><i>t</i> → ∞</span> (Moore and Russell, see Literature).</p>
+    </div>
+
+    <div class="lab" id="labA">
+      <div class="lab-title">
+        <h3>Diffusion on <span class="m"><i>Q</i><sub>3</sub></span>, side by side</h3>
+        <span class="caption">Click a corner to start the walk there.</span>
+      </div>
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Kind of diffusion">
+          <button type="button" id="modeC" aria-pressed="true">Classical heat flow</button>
+          <button type="button" id="modeQ" aria-pressed="false">Quantum mixer</button>
+        </div>
+        <div class="slider">
+          <label for="cubeTime" id="cubeTimeLabel">t</label>
+          <input type="range" id="cubeTime" min="0" max="1000" value="250">
+          <output id="cubeTimeOut" for="cubeTime"></output>
+        </div>
+        <button type="button" class="btn" id="cubePlay">Play</button>
+      </div>
+      <div class="two">
+        <div>
+          <div class="panel-label">Position space: corners</div>
+          <svg id="cubeSvg" viewBox="0 0 400 300" role="img" aria-label="Three-dimensional Hamming cube with probabilities on its corners"></svg>
+        </div>
+        <div>
+          <div class="panel-label" id="modeLabel">Frequency space: Walsh modes</div>
+          <svg id="modeSvg" viewBox="0 0 430 200" role="img" aria-label="Walsh mode coefficients of the current state"></svg>
+          <p class="caption" id="modeCaption"></p>
+        </div>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">Per-bit flip probability</span><span class="val" id="roFlip"></span></div>
+        <div class="ro"><span class="k">P(start corner)</span><span class="val" id="roStart"></span></div>
+        <div class="ro"><span class="k">P(opposite corner)</span><span class="val" id="roOpp"></span></div>
+      </div>
+      <p class="caption" id="cubeColorNote"></p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="cost">
+    <div class="sec-head"><div class="sec-num">PART 5</div><h2>The cost layer is a potential</h2></div>
+    <div class="prose">
+      <p>The other QAOA ingredient is <span class="m">e<sup>−<i>iγC</i></sup></span>. It is diagonal in position space: it multiplies the amplitude at corner <i class="v">x</i> by <span class="m">e<sup>−<i>iγC</i>(<i>x</i>)</sup></span>. In the language of the Schrödinger equation, <i class="v">C</i> is a potential and the mixer is the kinetic term.</p>
+      <p>On its own the cost layer changes no probabilities. Its effect is in frequency space. QAOA starts from <span class="m">|+⟩<sup>⊗<i>n</i></sup></span>, the uniform superposition, which is the single Fourier mode <span class="m"><i>s</i> = 0</span>. Multiplying by the phase pattern <span class="m">e<sup>−<i>iγC</i>(<i>x</i>)</sup></span> spreads weight onto other frequencies, according to the spectrum of that pattern. The mixer then rotates those modes at different speeds, and when you transform back to positions the phase differences have become amplitude differences. Good angles make them add up on corners with high <i class="v">C</i>.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="split">
+    <div class="sec-head"><div class="sec-num">PART 6</div><h2>QAOA is a split-step Fourier method</h2></div>
+    <div class="prose">
+      <p>The depth-<i class="v">p</i> QAOA state is</p>
+    </div>
+    <div class="eq">|<i>γ</i>, <i>β</i>⟩ = e<sup>−<i>iβ<sub>p</sub>A</i></sup> e<sup>−<i>iγ<sub>p</sub>C</i></sup> ⋯ e<sup>−<i>iβ</i><sub>1</sub><i>A</i></sup> e<sup>−<i>iγ</i><sub>1</sub><i>C</i></sup> |+⟩<sup>⊗<i>n</i></sup></div>
+    <div class="prose">
+      <p>Write each mixer as <span class="m">e<sup>−<i>iβA</i></sup> = <i>H</i><sup>⊗<i>n</i></sup> e<sup>−<i>iβ</i>Σ<i>Z<sub>i</sub></i></sup> <i>H</i><sup>⊗<i>n</i></sup></span>. Then every layer is four steps, alternating between two bases in which each operator is just a multiplication:</p>
+    </div>
+    <div class="pipeline" aria-label="One QAOA layer as a split-step Fourier step">
+      <div class="stage x"><span class="op">e<sup>−<i>iγC</i>(<i>x</i>)</sup></span><span class="what">Positions: phase kick from the cost</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="stage s"><span class="op"><i>H</i><sup>⊗<i>n</i></sup></span><span class="what">Transform to Walsh frequencies</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="stage s"><span class="op">e<sup>−<i>iβ</i>(<i>n</i>−2|<i>s</i>|)</sup></span><span class="what">Frequencies: phase rotation from the mixer</span></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="stage x"><span class="op"><i>H</i><sup>⊗<i>n</i></sup></span><span class="what">Transform back to positions, repeat <i>p</i> times</span></div>
+    </div>
+    <div class="prose">
+      <p>This is the split-operator method used to solve <span class="m"><i>i∂<sub>t</sub>ψ</i> = (<i>T</i> + <i>V</i>)<i>ψ</i></span> numerically: FFT to momentum space, apply the kinetic phase, FFT back, apply the potential phase. On the cube, the Walsh–Hadamard transform plays the FFT, the cube Laplacian plays <span class="m">−∇<sup>2</sup></span>, and the cost plays the potential. Three consequences follow directly:</p>
+      <ul class="reading" style="padding-left:1.1em; list-style: disc;">
+        <li>With many layers and small angles, QAOA is a Trotter discretization of continuous evolution under <span class="m"><i>a</i>(<i>t</i>) <i>A</i> + <i>b</i>(<i>t</i>) <i>C</i></span>. Adiabatic optimization and quantum-walk search are special schedules of this one equation.</li>
+        <li>A classical simulation costs <span class="m"><i>O</i>(<i>p n</i> 2<sup><i>n</i></sup>)</span> using the fast Walsh–Hadamard transform. The figure below runs exactly this in your browser.</li>
+        <li>At depth 1 the mixer cannot change Fourier magnitudes, only phases. Whatever frequency content the cost layer creates is all the mixer has to work with.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section id="landscape">
+    <div class="sec-head"><div class="sec-num">PART 7</div><h2>Depth 1 on a six-vertex prism</h2></div>
+    <div class="prose">
+      <p>Here is MaxCut on the triangular prism: two triangles joined by three rungs, 9 edges, 64 cuts. Because each triangle can cut at most two of its edges, the maximum cut is 7. A uniformly random cut has expected value 4.5. The heatmap is the depth-1 expectation <span class="m">⟨<i>C</i>⟩</span> over the full range of <span class="m">(<i>γ</i>, <i>β</i>)</span> that contains a maximum. Click or drag on it.</p>
+    </div>
+    <div class="lab" id="labB">
+      <div class="lab-title">
+        <h3>Landscape of <span class="m">⟨<i>γ</i>,<i>β</i>| <i>C</i> |<i>γ</i>,<i>β</i>⟩</span></h3>
+        <div class="heat-legend"><span id="heatMin"></span><span class="ramp" aria-hidden="true"></span><span id="heatMax"></span></div>
+      </div>
+      <canvas id="heat" tabindex="0" role="img" aria-label="Heatmap of the expected cut size over gamma and beta. Use the sliders below to choose a point."></canvas>
+      <div class="controls">
+        <div class="slider"><label for="gSlider">γ</label><input type="range" id="gSlider" min="0" max="1000" value="0"><output id="gOut" for="gSlider"></output></div>
+        <div class="slider"><label for="bSlider">β</label><input type="range" id="bSlider" min="0" max="1000" value="0"><output id="bOut" for="bSlider"></output></div>
+        <button type="button" class="btn" id="bestBtn">Jump to best</button>
+      </div>
+      <div class="readouts">
+        <div class="ro"><span class="k">Expected cut ⟨C⟩</span><span class="val" id="roE"></span></div>
+        <div class="ro"><span class="k">Approximation ratio ⟨C⟩/7</span><span class="val" id="roR"></span></div>
+        <div class="ro"><span class="k">P(maximum cut)</span><span class="val" id="roP"></span></div>
+        <div class="ro"><span class="k">Most likely string</span><span class="val" id="roMode"></span></div>
+      </div>
+      <div class="three">
+        <div>
+          <div class="panel-label">Most likely cut</div>
+          <svg id="graphSvg" viewBox="0 0 220 190" role="img" aria-label="The prism graph coloured by the most likely bitstring"></svg>
+          <p class="caption">Solid edges are cut by the most likely string. The two sides of the cut are teal and plum.</p>
+        </div>
+        <div>
+          <div class="panel-label">Distribution of the cut value</div>
+          <svg id="histSvg" viewBox="0 0 220 170" role="img" aria-label="Probability of each cut value compared with uniform sampling"></svg>
+          <p class="caption">Bars: measured cut value after QAOA. Dashed outlines: a uniformly random string.</p>
+        </div>
+        <div>
+          <div class="panel-label">Walsh weight by frequency |s|</div>
+          <svg id="specSvg" viewBox="0 0 220 170" role="img" aria-label="Fourier weight of the state grouped by Hamming weight of the frequency"></svg>
+          <p class="caption">Sum of <span class="m">|<i>ψ̂</i>(<i>s</i>)|<sup>2</sup></span> per weight. Move only β and these bars stay put: at depth 1 the mixer only rotates phases here.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="wick">
+    <div class="sec-head"><div class="sec-num">PART 8</div><h2>Rotate time and you get a genetic algorithm</h2></div>
+    <div class="prose">
+      <p>Replace each unitary by its imaginary-time counterpart. The mixer <span class="m">e<sup>−<i>iβA</i></sup></span> becomes the heat kernel <span class="m">e<sup>−<i>tL</i></sup></span>, which is independent bit-flip mutation. The cost layer <span class="m">e<sup>−<i>iγC</i></sup></span> becomes <span class="m">e<sup><i>γC</i></sup></span> followed by normalization, which is Boltzmann selection: corners with higher <i class="v">C</i> get exponentially more weight. Alternating the two is a mutation–selection process, the population form of a genetic algorithm or population annealing.</p>
+      <p>Since <span class="m">e<sup>−<i>tL</i></sup> = e<sup>−<i>nt</i></sup> e<sup><i>tA</i></sup></span>, the alternation is a Trotterization of <span class="m">e<sup><i>τ</i>(<i>C</i> + <i>κA</i>)</sup></span>. Repeated, it converges to the top eigenvector of <span class="m"><i>C</i> + <i>κA</i></span>, a positive vector that concentrates on the maximizers of <i class="v">C</i> as <span class="m"><i>κ</i> → 0</span>. The classical cousin works by damping: unwanted modes shrink and disappear.</p>
+      <p>QAOA is the real-time version of the same alternation. It cannot damp anything, because every step is unitary. It can only steer phases so that amplitudes interfere constructively on good corners. That is why its angles must be tuned, why its landscape has the oscillating structure you see above, and why an advantage over the classical cousin is something to establish problem by problem rather than assume.</p>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section id="summary">
+    <div class="sec-head"><div class="sec-num">PART 9</div><h2>The dictionary</h2></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Object</th><th>Position space (bitstrings <i>x</i>)</th><th>Frequency space (Walsh modes <i>s</i>)</th></tr></thead>
+        <tbody>
+          <tr><td>Cube adjacency <i>A</i> = Σ <i>X<sub>i</sub></i></td><td>Sum over single-bit flips</td><td>Multiplication by <span class="m"><i>n</i> − 2|<i>s</i>|</span></td></tr>
+          <tr><td>MaxCut cost <i>C</i></td><td>Multiplication by <span class="m"><i>C</i>(<i>x</i>)</span></td><td>Sparse: weight 0 and one weight-2 mode per edge</td></tr>
+          <tr><td>Heat flow e<sup>−<i>tL</i></sup></td><td>Each bit flips with probability <span class="m">(1 − e<sup>−2<i>t</i></sup>)/2</span></td><td>Mode <i>s</i> decays by <span class="m">e<sup>−2|<i>s</i>|<i>t</i></sup></span></td></tr>
+          <tr><td>Mixer e<sup>−<i>iβA</i></sup></td><td><span class="m">cos <i>β</i></span> to stay, <span class="m">−<i>i</i> sin <i>β</i></span> to flip, per bit</td><td>Mode <i>s</i> rotates by <span class="m">e<sup>−<i>iβ</i>(<i>n</i>−2|<i>s</i>|)</sup></span></td></tr>
+          <tr><td>Cost layer e<sup>−<i>iγC</i></sup></td><td>Phase kick <span class="m">e<sup>−<i>iγC</i>(<i>x</i>)</sup></span></td><td>Spreads weight according to the spectrum of the phase pattern</td></tr>
+          <tr><td>Initial state |+⟩<sup>⊗<i>n</i></sup></td><td>Uniform over all corners</td><td>The single mode <i>s</i> = 0</td></tr>
+          <tr><td>One QAOA layer</td><td colspan="2">Phase in positions, Walsh–Hadamard transform, phase in frequencies, transform back</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Literature</h3>
+      <p>Grouped by the part of this tutorial they support.</p>
+      <p class="lit-h">The algorithm</p>
+      <ul class="reading">
+        <li>E. Farhi, J. Goldstone, S. Gutmann, <a href="https://arxiv.org/abs/1411.4028">A Quantum Approximate Optimization Algorithm</a> (2014). The original paper; introduces the transverse-field mixer and the alternating ansatz.</li>
+        <li>S. Hadfield et al., <a href="https://arxiv.org/abs/1709.03489">From the QAOA to a Quantum Alternating Operator Ansatz</a> (2017). Other mixers for constrained problems, where the cube is replaced by other graphs on the feasible set.</li>
+      </ul>
+      <p class="lit-h">Fourier analysis on the cube (Parts 2 and 3)</p>
+      <ul class="reading">
+        <li>R. O’Donnell, <a href="https://arxiv.org/abs/2105.10386"><em>Analysis of Boolean Functions</em></a>. Walsh characters, the noise operator <span class="m"><i>T<sub>ρ</sub></i></span> (the heat flow of Part 3 with <span class="m"><i>ρ</i> = e<sup>−2<i>t</i></sup></span>) and low-degree spectra.</li>
+      </ul>
+      <p class="lit-h">The mixer as a quantum walk on the hypercube (Part 4)</p>
+      <ul class="reading">
+        <li>C. Moore, A. Russell, <a href="https://arxiv.org/abs/quant-ph/0104137">Quantum Walks on the Hypercube</a> (2001). Shows the continuous-time walk is exactly uniform at a specific time, faster than the classical walk’s Θ(<i>n</i> log <i>n</i>) mixing. In the units used here that time is <span class="m"><i>β</i> = π/4</span>.</li>
+        <li>J. Kempe, <a href="https://arxiv.org/abs/quant-ph/0303081">Quantum random walks: an introductory overview</a> (2003), and <a href="https://arxiv.org/abs/0712.0625">Mixing Times in Quantum Walks on the Hypercube</a>. Hitting times to the opposite corner and the subtleties of quantum mixing times.</li>
+        <li><a href="https://arxiv.org/abs/0808.2382">Mixing of Quantum Walks on Generalized Hypercubes</a> (2008). The same Fourier argument on group-circulant graphs: characters <span class="m">(−1)<sup><i>a</i>·<i>x</i></sup></span> diagonalize the walk.</li>
+      </ul>
+      <p class="lit-h">QAOA as alternating phase kicks and quantum walks (Parts 5 and 6)</p>
+      <ul class="reading">
+        <li>S. Marsh, J. B. Wang, <a href="https://arxiv.org/abs/1912.07353">Combinatorial optimisation via highly efficient quantum walks</a> (2019). The quantum walk optimisation algorithm (QWOA): quality-dependent phase shifts alternated with walks on circulant graphs, which the Fourier transform diagonalizes. The direct generalization of the split-step view.</li>
+        <li><a href="https://arxiv.org/abs/2408.06368">Analysis of the Non-variational Quantum Walk-based Optimisation Algorithm</a> (2024). A follow-up analysis of that family.</li>
+        <li><a href="https://arxiv.org/abs/2403.15540">Depth scaling of unstructured search via quantum approximate optimization</a> (2024). Recovers QAOA sequences by Trotterizing a continuous-time quantum walk and bounds the depth with Trotter-error theory.</li>
+        <li><a href="https://arxiv.org/abs/2308.05418">Guided quantum walk</a> (2023). Steers the hypercube walk using the spectrum of the problem Hamiltonian instead of variational angles.</li>
+      </ul>
+      <p class="lit-h">Landscapes and mechanisms (Part 7)</p>
+      <ul class="reading">
+        <li>L. Zhou, S.-T. Wang, S. Choi, H. Pichler, M. D. Lukin, <a href="https://arxiv.org/abs/1812.01041">QAOA: Performance, Mechanism, and Implementation on Near-Term Devices</a> (2018). Optimized MaxCut angles and evidence that QAOA uses non-adiabatic mechanisms. Note that its “FOURIER” heuristic is a Fourier series over the layer index of the angles, a different Fourier transform from the one on the cube.</li>
+        <li><a href="https://arxiv.org/abs/2305.13594">Connecting the Hamiltonian structure to the QAOA energy and Fourier landscape structure</a> (2023). Treats <span class="m">⟨<i>C</i>⟩(<i>γ</i>, <i>β</i>)</span> as a Fourier series in the angles, with frequencies set by the eigenvalues of the cost and mixer. This explains the periodicity in the heatmap.</li>
+      </ul>
+      <p class="caption">I found no single reference that presents QAOA explicitly as a split-step Fourier method on the cube, or that derives the imaginary-time mutation–selection analogue of Part 8. Those framings are assembled here from the standard facts above, so check them against the sources before citing.</p>
+    </div>
+  </section>
+
+  <footer>All figures are computed live in the page by exact state-vector simulation with the fast Walsh–Hadamard transform. No data leaves your browser.</footer>
+</main>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const cssVar = (name) => getComputedStyle(root).getPropertyValue(name).trim();
+  const pc = (x) => { let c = 0; while (x) { c += x & 1; x >>= 1; } return c; };
+  const bitstr = (x, n) => { let s = ''; for (let i = 0; i < n; i++) s += (x >> i) & 1; return s; };
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const txt = (parent, x, y, s, cls, anchor) => {
+    const t = el('text', { x, y, class: cls || 'lbl', 'text-anchor': anchor || 'middle' }, parent);
+    t.textContent = s;
+    return t;
+  };
+  const phaseFill = (phi) => {
+    let h = (phi * 180 / Math.PI) % 360; if (h < 0) h += 360;
+    return `hsl(${h.toFixed(1)} var(--phase-s) var(--phase-l))`;
+  };
+  const fmt = (v, d = 3) => v.toFixed(d);
+  const piFrac = (v) => {
+    const r = v / Math.PI;
+    return `${v.toFixed(3)} (${r.toFixed(3)}π)`;
+  };
+  function fitCanvas(c) {
+    const r = c.getBoundingClientRect();
+    const d = window.devicePixelRatio || 1;
+    c.width = Math.max(1, Math.round(r.width * d));
+    c.height = Math.max(1, Math.round(r.height * d));
+    const ctx = c.getContext('2d');
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+
+  /* ---------- hero: 16x16 Walsh matrix ---------- */
+  const walsh16 = document.getElementById('walsh16');
+  function drawWalsh16() {
+    const { ctx, w } = fitCanvas(walsh16);
+    const n = 4, N = 16;
+    const rows = [...Array(N).keys()].sort((a, b) => pc(a) - pc(b) || a - b);
+    const gap = Math.max(1, w / 200), cell = (w - gap * (N - 1)) / N;
+    const pos = cssVar('--pos'), neg = cssVar('--neg');
+    ctx.clearRect(0, 0, w, w);
+    rows.forEach((s, r) => {
+      for (let x = 0; x < N; x++) {
+        ctx.fillStyle = pc(s & x) % 2 ? neg : pos;
+        ctx.fillRect(x * (cell + gap), r * (cell + gap), cell, cell);
+      }
+    });
+  }
+
+  /* ---------- part 2: 8x8 Walsh grid ---------- */
+  (function buildWalsh8() {
+    const g = document.getElementById('walsh8');
+    const n = 3, N = 8;
+    const add = (cls, text) => { const d = document.createElement('div'); d.className = cls; if (text !== undefined) d.textContent = text; g.appendChild(d); return d; };
+    add('hd', 's \\ x');
+    for (let x = 0; x < N; x++) add('hd', bitstr(x, n));
+    add('hd', 'n−2|s|');
+    let last = -1;
+    [...Array(N).keys()].sort((a, b) => pc(a) - pc(b) || a - b).forEach((s) => {
+      if (last !== -1 && pc(s) !== last) add('grp');
+      last = pc(s);
+      add('rl', bitstr(s, n));
+      for (let x = 0; x < N; x++) add('t ' + (pc(s & x) % 2 ? 'n' : 'p'));
+      add('ev', (n - 2 * pc(s) > 0 ? '+' : '') + (n - 2 * pc(s)));
+    });
+  })();
+
+  /* ---------- part 4: cube diffusion lab ---------- */
+  const A = { n: 3, mode: 'classical', u: 0.25, start: 0, playing: false };
+  const cubeSvg = document.getElementById('cubeSvg');
+  const modeSvg = document.getElementById('modeSvg');
+  const cubeTime = document.getElementById('cubeTime');
+  const cubePos = (x) => {
+    const b0 = x & 1, b1 = (x >> 1) & 1, b2 = (x >> 2) & 1;
+    return [70 + 190 * b0 + 85 * b2, 240 - 150 * b1 - 70 * b2];
+  };
+  const modeOrder = [0, 1, 2, 4, 3, 5, 6, 7];
+  const modeX = (s) => {
+    const w = pc(s);
+    const groups = [[0], [1, 2, 4], [3, 5, 6], [7]];
+    const idx = groups[w].indexOf(s);
+    const starts = [22, 86, 230, 374];
+    return starts[w] + idx * 46 + 17;
+  };
+  function cubeState() {
+    const { n, mode, u, start } = A;
+    const P = new Array(8).fill(0), phase = new Array(8).fill(0), coef = new Array(8).fill(0), cphase = new Array(8).fill(0);
+    let flip;
+    if (mode === 'classical') {
+      const t = 1.5 * u;
+      flip = (1 - Math.exp(-2 * t)) / 2;
+      for (let x = 0; x < 8; x++) { const k = pc(x ^ start); P[x] = flip ** k * (1 - flip) ** (n - k); }
+      for (let s = 0; s < 8; s++) coef[s] = (pc(s & start) % 2 ? -1 : 1) * Math.exp(-2 * pc(s) * t);
+      return { P, coef, flip, param: t };
+    }
+    const b = (Math.PI / 2) * u, c = Math.cos(b), sn = Math.sin(b);
+    flip = sn * sn;
+    for (let x = 0; x < 8; x++) {
+      const k = pc(x ^ start);
+      const mag = c ** (n - k) * sn ** k;
+      P[x] = mag * mag;
+      phase[x] = -k * Math.PI / 2;
+    }
+    for (let s = 0; s < 8; s++) cphase[s] = -b * (n - 2 * pc(s)) + (pc(s & start) % 2 ? Math.PI : 0);
+    return { P, phase, cphase, flip, param: b };
+  }
+  function drawCube() {
+    const st = cubeState();
+    const q = A.mode === 'quantum';
+    cubeSvg.textContent = '';
+    for (let x = 0; x < 8; x++) for (let i = 0; i < 3; i++) {
+      const y = x ^ (1 << i);
+      if (y > x) { const [x1, y1] = cubePos(x), [x2, y2] = cubePos(y); el('line', { x1, y1, x2, y2, class: 'edge' }, cubeSvg); }
+    }
+    for (let x = 0; x < 8; x++) {
+      const [cx, cy] = cubePos(x);
+      const r = 5 + 26 * Math.sqrt(st.P[x]);
+      if (x === A.start) el('circle', { cx, cy, r: r + 5, class: 'startring' }, cubeSvg);
+      const c = el('circle', { cx, cy, r, class: 'vtx', tabindex: 0, role: 'button', 'aria-label': `Start at ${bitstr(x, 3)}` }, cubeSvg);
+      c.style.fill = q && st.P[x] > 1e-12 ? phaseFill(st.phase[x]) : 'var(--pos)';
+      c.addEventListener('click', () => { A.start = x; renderA(); });
+      c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); A.start = x; renderA(); } });
+      const above = cy < 150;
+      txt(cubeSvg, cx, above ? cy - r - 8 : cy + r + 15, bitstr(x, 3), 'lbl-ink');
+      txt(cubeSvg, cx + (x & 1 ? 1 : -1) * (r + 6), cy + 4, st.P[x].toFixed(3), 'lbl', x & 1 ? 'start' : 'end');
+    }
+    // mode panel
+    modeSvg.textContent = '';
+    const base = 108;
+    ['|s| = 0', '|s| = 1', '|s| = 2', '|s| = 3'].forEach((label, w) => {
+      const xs = [39, 149, 293, 391][w];
+      txt(modeSvg, xs, 16, label, 'lbl-ink');
+      txt(modeSvg, xs, 32, `λ = ${3 - 2 * w > 0 ? '+' : ''}${3 - 2 * w}`, 'lbl');
+    });
+    if (!q) el('line', { x1: 8, x2: 422, y1: base, y2: base, class: 'base' }, modeSvg);
+    modeOrder.forEach((s) => {
+      const cx = modeX(s);
+      if (!q) {
+        const v = st.coef[s], h = 58 * Math.abs(v);
+        el('rect', { x: cx - 13, y: v >= 0 ? base - h : base, width: 26, height: Math.max(h, 0.5), class: v >= 0 ? 'bar-p' : 'bar-n' }, modeSvg);
+      } else {
+        const R = 18, ph = st.cphase[s];
+        el('circle', { cx, cy: base, r: R, class: 'dial' }, modeSvg);
+        const x2 = cx + R * Math.cos(ph), y2 = base - R * Math.sin(ph);
+        const ln = el('line', { x1: cx, y1: base, x2, y2, 'stroke-width': 2.6, 'stroke-linecap': 'round' }, modeSvg);
+        ln.style.stroke = phaseFill(ph);
+        const dot = el('circle', { cx: x2, cy: y2, r: 3.2 }, modeSvg);
+        dot.style.fill = phaseFill(ph);
+      }
+      txt(modeSvg, cx, 186, bitstr(s, 3), 'lbl');
+    });
+    // labels & readouts
+    document.getElementById('cubeTimeLabel').textContent = q ? 'β' : 't';
+    document.getElementById('cubeTimeOut').textContent = q ? `${st.param.toFixed(3)} (${(st.param / Math.PI).toFixed(3)}π)` : st.param.toFixed(3);
+    document.getElementById('roFlip').textContent = st.flip.toFixed(3);
+    document.getElementById('roStart').textContent = st.P[A.start].toFixed(3);
+    document.getElementById('roOpp').textContent = st.P[A.start ^ 7].toFixed(3);
+    document.getElementById('modeCaption').textContent = q
+      ? 'Each dial is one Walsh mode of the amplitude. Its length never changes; it rotates at speed n − 2|s|, so modes of different weight drift out of step.'
+      : 'Each bar is one Walsh coefficient of the distribution, relative to the constant mode. It decays as e^(−2|s|t); a negative bar means the mode flips sign at the start corner.';
+    document.getElementById('cubeColorNote').textContent = q
+      ? 'Circle area is probability; colour is the phase of the amplitude. Corners at the same distance from the start share a phase, (−i)^k.'
+      : 'Circle area is probability. The dashed ring marks the start corner.';
+  }
+  function renderA() { A.u = cubeTime.value / 1000; drawCube(); }
+  cubeTime.addEventListener('input', renderA);
+  const setMode = (m) => {
+    A.mode = m;
+    document.getElementById('modeC').setAttribute('aria-pressed', m === 'classical');
+    document.getElementById('modeQ').setAttribute('aria-pressed', m === 'quantum');
+    renderA();
+  };
+  document.getElementById('modeC').addEventListener('click', () => setMode('classical'));
+  document.getElementById('modeQ').addEventListener('click', () => setMode('quantum'));
+  const playBtn = document.getElementById('cubePlay');
+  let rafId = null, lastT = 0;
+  const step = (ts) => {
+    if (!A.playing) return;
+    const dt = lastT ? (ts - lastT) / 1000 : 0; lastT = ts;
+    let v = +cubeTime.value + dt * 220;
+    if (v >= 1000) { v = 1000; A.playing = false; playBtn.textContent = 'Play'; }
+    cubeTime.value = v; renderA();
+    if (A.playing) rafId = requestAnimationFrame(step);
+  };
+  playBtn.addEventListener('click', () => {
+    if (A.playing) { A.playing = false; playBtn.textContent = 'Play'; cancelAnimationFrame(rafId); return; }
+    if (+cubeTime.value >= 1000) cubeTime.value = 0;
+    A.playing = true; lastT = 0; playBtn.textContent = 'Pause';
+    rafId = requestAnimationFrame(step);
+  });
+
+  /* ---------- part 7: QAOA depth 1 on the prism ---------- */
+  const n = 6, N = 1 << n;
+  const edges = [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5]];
+  const C = new Float64Array(N), W = new Int32Array(N);
+  for (let x = 0; x < N; x++) {
+    W[x] = pc(x);
+    for (const [i, j] of edges) if (((x >> i) & 1) !== ((x >> j) & 1)) C[x]++;
+  }
+  let Cmax = 0; for (let x = 0; x < N; x++) Cmax = Math.max(Cmax, C[x]);
+  const uniformHist = new Float64Array(Cmax + 1);
+  for (let x = 0; x < N; x++) uniformHist[C[x]] += 1 / N;
+
+  function fwht(a) {
+    for (let h = 1; h < a.length; h <<= 1)
+      for (let i = 0; i < a.length; i += h << 1)
+        for (let j = i; j < i + h; j++) { const u = a[j], v = a[j + h]; a[j] = u + v; a[j + h] = u - v; }
+  }
+  const re = new Float64Array(N), im = new Float64Array(N);
+  // One QAOA layer as a split-step Fourier step: cost phase, WHT, mixer phase, WHT back.
+  function simulate(g, b, detail) {
+    const a0 = 1 / Math.sqrt(N);
+    for (let x = 0; x < N; x++) { const ang = -g * C[x]; re[x] = a0 * Math.cos(ang); im[x] = a0 * Math.sin(ang); }
+    fwht(re); fwht(im);
+    let spec = null;
+    if (detail) { spec = new Float64Array(n + 1); for (let s = 0; s < N; s++) spec[W[s]] += (re[s] * re[s] + im[s] * im[s]) / N; }
+    for (let s = 0; s < N; s++) {
+      const ang = -b * (n - 2 * W[s]), c = Math.cos(ang), sn = Math.sin(ang);
+      const r = re[s], i = im[s];
+      re[s] = r * c - i * sn; im[s] = r * sn + i * c;
+    }
+    fwht(re); fwht(im);
+    let E = 0;
+    const P = detail ? new Float64Array(N) : null;
+    for (let x = 0; x < N; x++) {
+      const p = (re[x] * re[x] + im[x] * im[x]) / (N * N);
+      E += p * C[x];
+      if (P) P[x] = p;
+    }
+    return detail ? { E, P, spec } : E;
+  }
+
+  const GX = 120, GY = 80, GMAX = Math.PI, BMAX = Math.PI / 2;
+  const grid = new Float64Array(GX * GY);
+  let gmin = Infinity, gmaxv = -Infinity, best = { g: 0, b: 0, E: -Infinity };
+  for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
+    const g = (i + 0.5) / GX * GMAX, b = (j + 0.5) / GY * BMAX;
+    const E = simulate(g, b, false);
+    grid[j * GX + i] = E;
+    if (E < gmin) gmin = E;
+    if (E > gmaxv) gmaxv = E;
+  }
+  // refine the best point on a finer local grid
+  {
+    let bi = 0; for (let k = 1; k < grid.length; k++) if (grid[k] > grid[bi]) bi = k;
+    const g0 = ((bi % GX) + 0.5) / GX * GMAX, b0 = (Math.floor(bi / GX) + 0.5) / GY * BMAX;
+    for (let a = -20; a <= 20; a++) for (let c = -20; c <= 20; c++) {
+      const g = g0 + a * GMAX / GX / 20, b = b0 + c * BMAX / GY / 20;
+      if (g < 0 || g > GMAX || b < 0 || b > BMAX) continue;
+      const E = simulate(g, b, false);
+      if (E > best.E) best = { g, b, E };
+    }
+  }
+  document.getElementById('heatMin').textContent = gmin.toFixed(2);
+  document.getElementById('heatMax').textContent = gmaxv.toFixed(2);
+
+  const B = { g: best.g, b: best.b };
+  const heat = document.getElementById('heat');
+  const gS = document.getElementById('gSlider'), bS = document.getElementById('bSlider');
+  const PAD = { l: 50, r: 12, t: 10, b: 40 };
+  const hex = (c) => { c = c.replace('#', ''); return [0, 2, 4].map((k) => parseInt(c.slice(k, k + 2), 16)); };
+  function ramp(t, lo, mid, hi) {
+    const [a, b2, u] = t < 0.5 ? [lo, mid, t * 2] : [mid, hi, (t - 0.5) * 2];
+    return `rgb(${a.map((v, k) => Math.round(v + (b2[k] - v) * u)).join(',')})`;
+  }
+  function drawHeat() {
+    const { ctx, w, h } = fitCanvas(heat);
+    const lo = hex(cssVar('--heat-lo')), mid = hex(cssVar('--heat-mid')), hi = hex(cssVar('--heat-hi'));
+    const ink = cssVar('--ink'), muted = cssVar('--muted'), rule = cssVar('--rule'), panel = cssVar('--panel');
+    const pw = w - PAD.l - PAD.r, ph = h - PAD.t - PAD.b;
+    ctx.clearRect(0, 0, w, h);
+    const cw = pw / GX, ch = ph / GY;
+    for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
+      const t = (grid[j * GX + i] - gmin) / (gmaxv - gmin);
+      ctx.fillStyle = ramp(t, lo, mid, hi);
+      ctx.fillRect(PAD.l + i * cw, PAD.t + (GY - 1 - j) * ch, cw + 0.6, ch + 0.6);
+    }
+    ctx.strokeStyle = rule; ctx.lineWidth = 1;
+    ctx.strokeRect(PAD.l + 0.5, PAD.t + 0.5, pw - 1, ph - 1);
+    ctx.fillStyle = muted;
+    ctx.font = `11px ${cssVar('--f-mono')}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ['0', 'π/4', 'π/2', '3π/4', 'π'].forEach((lab, k) => {
+      const x = PAD.l + pw * k / 4;
+      ctx.fillText(lab, x, PAD.t + ph + 6);
+    });
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ['0', 'π/8', 'π/4', '3π/8', 'π/2'].forEach((lab, k) => {
+      const y = PAD.t + ph - ph * k / 4;
+      ctx.fillText(lab, PAD.l - 6, y);
+    });
+    ctx.fillStyle = ink;
+    ctx.font = `italic 14px ${cssVar('--f-math')}`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('γ', PAD.l + pw / 2, h - 4);
+    ctx.save(); ctx.translate(13, PAD.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('β', 0, 4); ctx.restore();
+    // marker
+    const mx = PAD.l + B.g / GMAX * pw, my = PAD.t + ph - B.b / BMAX * ph;
+    ctx.lineWidth = 3; ctx.strokeStyle = panel;
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, 2 * Math.PI); ctx.stroke();
+    ctx.lineWidth = 1.6; ctx.strokeStyle = ink;
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, 2 * Math.PI); ctx.stroke();
+  }
+  const graphPos = [[110, 18], [192, 160], [28, 160], [110, 72], [150, 136], [70, 136]];
+  function drawB() {
+    const r = simulate(B.g, B.b, true);
+    let mode = 0; for (let x = 1; x < N; x++) if (r.P[x] > r.P[mode]) mode = x;
+    let popt = 0; for (let x = 0; x < N; x++) if (C[x] === Cmax) popt += r.P[x];
+    document.getElementById('roE').textContent = r.E.toFixed(3);
+    document.getElementById('roR').textContent = (r.E / Cmax).toFixed(3);
+    document.getElementById('roP').textContent = popt.toFixed(3);
+    document.getElementById('roMode').textContent = `${bitstr(mode, n)} (cut ${C[mode]})`;
+    document.getElementById('gOut').textContent = piFrac(B.g);
+    document.getElementById('bOut').textContent = piFrac(B.b);
+    // graph
+    const gs = document.getElementById('graphSvg'); gs.textContent = '';
+    for (const [i, j] of edges) {
+      const cut = ((mode >> i) & 1) !== ((mode >> j) & 1);
+      el('line', { x1: graphPos[i][0], y1: graphPos[i][1], x2: graphPos[j][0], y2: graphPos[j][1], class: 'gedge' + (cut ? ' cut' : '') }, gs);
+    }
+    graphPos.forEach(([x, y], i) => {
+      el('circle', { cx: x, cy: y, r: 12, class: (mode >> i) & 1 ? 'gv1' : 'gv0' }, gs);
+      const t = txt(gs, x, y + 4, String(i + 1), 'gvl');
+    });
+    // histogram
+    const hs = document.getElementById('histSvg'); hs.textContent = '';
+    const hist = new Float64Array(Cmax + 1); for (let x = 0; x < N; x++) hist[C[x]] += r.P[x];
+    let top = 0; for (let c = 0; c <= Cmax; c++) top = Math.max(top, hist[c], uniformHist[c]);
+    top = Math.max(0.05, top);
+    const x0 = 14, bw = (210 - x0) / (Cmax + 1), base = 140;
+    el('line', { x1: x0 - 4, x2: 214, y1: base, y2: base, class: 'base' }, hs);
+    for (let c = 0; c <= Cmax; c++) {
+      const hh = 120 * hist[c] / top, hu = 120 * uniformHist[c] / top;
+      el('rect', { x: x0 + c * bw + 3, y: base - hh, width: bw - 6, height: Math.max(hh, 0.5), class: c === Cmax ? 'bar-n' : 'bar-p' }, hs);
+      if (hu > 0) el('rect', { x: x0 + c * bw + 1.5, y: base - hu, width: bw - 3, height: hu, class: 'ref' }, hs);
+      txt(hs, x0 + c * bw + bw / 2, base + 14, String(c), 'lbl');
+    }
+    txt(hs, 214, 10, `max ${top.toFixed(2)}`, 'lbl', 'end');
+    // spectrum
+    const ss = document.getElementById('specSvg'); ss.textContent = '';
+    const sw = (210 - x0) / (n + 1);
+    el('line', { x1: x0 - 4, x2: 214, y1: base, y2: base, class: 'base' }, ss);
+    for (let k = 0; k <= n; k++) {
+      const hh = 120 * r.spec[k];
+      el('rect', { x: x0 + k * sw + 3, y: base - hh, width: sw - 6, height: Math.max(hh, 0.5), class: 'bar-p' }, ss);
+      txt(ss, x0 + k * sw + sw / 2, base + 14, String(k), 'lbl');
+      if (r.spec[k] > 0.004) txt(ss, x0 + k * sw + sw / 2, base - hh - 4, r.spec[k].toFixed(2), 'lbl');
+    }
+    drawHeat();
+  }
+  function setB(g, b, fromSlider) {
+    B.g = Math.min(GMAX, Math.max(0, g));
+    B.b = Math.min(BMAX, Math.max(0, b));
+    if (!fromSlider) { gS.value = Math.round(B.g / GMAX * 1000); bS.value = Math.round(B.b / BMAX * 1000); }
+    drawB();
+  }
+  gS.addEventListener('input', () => setB(gS.value / 1000 * GMAX, B.b, true));
+  bS.addEventListener('input', () => setB(B.g, bS.value / 1000 * BMAX, true));
+  document.getElementById('bestBtn').addEventListener('click', () => setB(best.g, best.b));
+  const pick = (e) => {
+    const r = heat.getBoundingClientRect();
+    const pw = r.width - PAD.l - PAD.r, ph = r.height - PAD.t - PAD.b;
+    const g = (e.clientX - r.left - PAD.l) / pw * GMAX;
+    const b = (r.height - PAD.b - (e.clientY - r.top)) / ph * BMAX;
+    setB(g, b);
+  };
+  heat.addEventListener('pointerdown', (e) => { heat.setPointerCapture(e.pointerId); pick(e); });
+  heat.addEventListener('pointermove', (e) => { if (e.buttons & 1) pick(e); });
+  heat.addEventListener('keydown', (e) => {
+    const dg = GMAX / 100, db = BMAX / 100;
+    const moves = { ArrowLeft: [-dg, 0], ArrowRight: [dg, 0], ArrowUp: [0, db], ArrowDown: [0, -db] };
+    if (moves[e.key]) { e.preventDefault(); setB(B.g + moves[e.key][0], B.b + moves[e.key][1]); }
+  });
+
+  /* ---------- init and theme/resize handling ---------- */
+  function redrawCanvases() { drawWalsh16(); drawHeat(); }
+  renderA();
+  setB(best.g, best.b);
+  drawWalsh16();
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawCanvases); } catch (e) {}
+  new MutationObserver(redrawCanvases).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(() => redrawCanvases());
+    ro.observe(walsh16); ro.observe(heat);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCanvases);
+})();
+</script>

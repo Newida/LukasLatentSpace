@@ -1,0 +1,628 @@
+<title>Genetic Algorithms on the Hamming Cube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=STIX+Two+Text:ital@0;1&display=swap">
+<style>
+/* Layout: a single notebook column like a Markdown post on GitHub; teal marks the population, plum the maximum cut and the threshold. */
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --rule: #d1d9e0;
+  --code-bg: #f6f8fa;
+  --accent: #0969da;
+  --pos: #0e7a88;
+  --neg: #9b3d8a;
+  --ink: #1f2328;
+  --panel: #ffffff;
+  --heat-lo: #f2f5f7;
+  --heat-mid: #5aa9b3;
+  --heat-hi: #123f5c;
+  --phase-s: 62%;
+  --phase-l: 42%;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-math: "STIX Two Text", "Times New Roman", Times, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --rule: #3d444d; --code-bg: #151b23; --accent: #4493f8;
+    --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
+    --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+    --phase-s: 60%; --phase-l: 64%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --rule: #3d444d; --code-bg: #151b23; --accent: #4493f8;
+  --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
+  --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+  --phase-s: 60%; --phase-l: 64%;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.frame { max-width: 820px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; }
+.frame > * { min-width: 0; }
+
+h1, h2, h3 { font-weight: 600; line-height: 1.25; text-wrap: balance; }
+h1 { font-size: 2em; margin: 0 0 16px; padding-bottom: 0.3em; border-bottom: 1px solid var(--rule); }
+h2 { font-size: 1.5em; margin: 36px 0 16px; padding-bottom: 0.3em; border-bottom: 1px solid var(--rule); }
+h3 { font-size: 1.25em; margin: 24px 0 16px; }
+p, ul, ol, blockquote, pre, figure, .tablewrap, .toy { margin: 0 0 16px; }
+ul, ol { padding-left: 2em; }
+li + li { margin-top: 0.25em; }
+strong { font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+blockquote { padding: 0 1em; color: var(--muted); border-left: 0.25em solid var(--rule); }
+blockquote strong { color: var(--fg); }
+
+code { font-family: var(--f-mono); font-size: 85%; background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 6px; }
+pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.45; background: var(--code-bg); padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14.5px; min-width: 640px; }
+th, td { border: 1px solid var(--rule); padding: 6px 13px; text-align: left; vertical-align: top; }
+th { font-weight: 600; }
+tr:nth-child(2n) td { background: var(--code-bg); }
+
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; padding: 2px 0; }
+
+figure { display: grid; gap: 8px; }
+figure.narrow { max-width: 340px; }
+figure.medium { max-width: 640px; }
+figcaption, .caption { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; }
+#walsh16 { width: 100%; max-width: 100%; aspect-ratio: 1 / 1; display: block; }
+
+.toy { border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 14px; }
+.toy-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { font: 500 13px var(--f-body); padding: 5px 12px; border: 0; background: var(--code-bg); color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.btn { font: 500 13px var(--f-body); padding: 5px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--code-bg); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.slider { display: flex; align-items: center; gap: 10px; flex: 1 1 240px; min-width: 0; }
+.slider label { font-family: var(--f-math); font-style: italic; font-size: 1.1rem; min-width: 1.2em; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider output { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-width: 6.5em; font-variant-numeric: tabular-nums; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.three { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 760px) { .three { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 600px) { .two, .three { grid-template-columns: minmax(0, 1fr); } }
+.panel-label { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.readouts { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.ro { display: grid; gap: 1px; }
+.ro .k { font-size: 12px; color: var(--muted); }
+.ro .val { font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+svg.plot { display: block; width: 100%; height: auto; overflow: visible; }
+svg .edge { stroke: var(--rule); stroke-width: 2; }
+svg .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+svg .lbl-ink { fill: var(--ink); font-family: var(--f-mono); font-size: 11px; }
+svg .base { stroke: var(--rule); stroke-width: 1; }
+svg .bar-p { fill: var(--pos); }
+svg .bar-n { fill: var(--neg); }
+svg .bar-m { fill: var(--muted); opacity: 0.45; }
+svg .ref { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 2; }
+svg .dial { fill: none; stroke: var(--rule); stroke-width: 1.2; }
+svg .startring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+svg .vtx { stroke: var(--panel); stroke-width: 1.5; cursor: pointer; }
+svg .gedge { stroke: var(--rule); stroke-width: 2; stroke-dasharray: 4 4; }
+svg .gedge.cut { stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: none; }
+svg .gv0 { fill: var(--pos); }
+svg .gv1 { fill: var(--neg); }
+svg .gvl { fill: var(--panel); font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
+
+#heat { width: 100%; max-width: 100%; aspect-ratio: 3 / 2; display: block; cursor: crosshair; touch-action: none; }
+.heat-legend { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.heat-legend .ramp { width: 140px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, var(--heat-lo), var(--heat-mid), var(--heat-hi)); border: 1px solid var(--rule); }
+
+footer { margin-top: 40px; color: var(--muted); font-size: 14px; }
+footer .dashes { font-family: var(--f-mono); white-space: nowrap; overflow: hidden; color: var(--rule); margin-bottom: 8px; }
+footer p { margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+svg .trace { fill: none; stroke: var(--pos); stroke-width: 2; stroke-linejoin: round; }
+svg .dot { fill: var(--pos); }
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .uni { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 1 3; }
+svg .qline { stroke: var(--neg); stroke-width: 1.4; stroke-dasharray: 4 3; }
+
+</style>
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    macros: { ket: ['\\left|#1\\right\\rangle', 1], bra: ['\\left\\langle #1\\right|', 1] }
+  },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+
+<main class="frame">
+<h1>Genetic Algorithms on the Hamming Cube</h1>
+<p>In this post, I want to understand genetic algorithms the same way we looked at QAOA in the last post (QAOAOnTheHammingCube): as dynamics on the Hamming cube.</p>
+<p>Spoiler: a genetic algorithm without crossover is QAOA in imaginary time. And, as it turns out, it is also a quantum spin chain, just one that is evolved in a very non-quantum way. But let us build this up slowly.</p>
+<h2>The problem</h2>
+<ol>
+<li>We stay with the same problem as last time.</li>
+</ol>
+<p><a id="problem-1"></a></p>
+<blockquote>
+<p><strong>Problem 1: MaxCut.</strong><br />
+Given a graph $G = (V, E)$ with $n$ vertices, split the vertices into two sides such that as many edges as possible go between the two sides.</p>
+</blockquote>
+<p>A split is a bitstring $x \in \{0,1\}^n$ and the number of cut edges is $C(x) = \sum_{(i,j) \in E} [x_i \neq x_j]$. We want the corner of the Hamming cube where $C$ is largest.</p>
+<ol start="2">
+<li>The genetic algorithm idea in one sentence: keep a population of candidate solutions, let them reproduce with small copying errors, and let the better ones have more offspring. Nature has been doing this for a while, and Holland turned it into an algorithm in the 1970s.</li>
+</ol>
+<h2>A genetic algorithm in five lines</h2>
+<ol>
+<li>Here is the simplest version I can think of:</li>
+</ol>
+<pre><code>population = N random bitstrings
+repeat:
+    selection: draw N new strings from the population,
+               each with probability proportional to exp(gamma * C(x))
+    mutation:  flip every bit of every string independently with probability q
+    remember the best string seen so far
+</code></pre>
+<ol start="2">
+<li>
+<p>There are two knobs. $\gamma$ says how greedy selection is: $\gamma = 0$ ignores the cost completely, a large $\gamma$ almost only copies the current best strings. $q$ says how much mutation happens.</p>
+</li>
+<li>
+<p>Real genetic algorithms also do <strong>crossover</strong>, mixing two parents into one child. We will come back to that at the very end. Without it, things get surprisingly clean.</p>
+</li>
+</ol>
+<h2>From a population to a distribution</h2>
+<ol>
+<li>Let us make the population infinitely large. Then it becomes a probability distribution $p$ over the $2^n$ corners of the cube, and both steps act on $p$.</li>
+</ol>
+<p>a) Selection multiplies by the weights and renormalizes:</p>
+<p>$$
+p(x) \;\leftarrow\; \frac{e^{\gamma C(x)}\, p(x)}{\sum_y e^{\gamma C(y)}\, p(y)} .
+$$</p>
+<p>In matrix form this is the diagonal matrix $S = \mathrm{diag}\big(e^{\gamma C(x)}\big)$, followed by a normalization.</p>
+<p>b) Mutation turns a parent $y$ into a child $x$ with probability</p>
+<p>$$
+M_{xy} = q^{\,d(x,y)}\,(1-q)^{\,n - d(x,y)},
+$$</p>
+<p>where $d(x,y)$ is the Hamming distance.</p>
+<p>c) So one generation is</p>
+<p>$$
+p \;\leftarrow\; \frac{M S\, p}{\mathbf{1}^T M S\, p} .
+$$</p>
+<ol start="2">
+<li>Look closely: apart from the normalization, this is linear! The infinite-population genetic algorithm is nothing else than the <strong>power method</strong> for the matrix $MS$.</li>
+</ol>
+<h2>Mutation is diffusion, selection is a potential</h2>
+<ol>
+<li>$M$ is exactly the heat kernel from the last post. Flipping every bit independently with probability $q$ is diffusion on the cube for a time $t$ with</li>
+</ol>
+<p>$$
+q = \frac{1 - e^{-2t}}{2}, \qquad M = e^{-tL} .
+$$</p>
+<ol start="2">
+<li>In the Walsh basis, mutation multiplies mode $s$ by</li>
+</ol>
+<p>$$
+(1 - 2q)^{|s|} = e^{-2t|s|} .
+$$</p>
+<p>So mutation is a low-pass filter. Every generation, rough patterns on the cube get damped and smooth ones survive.</p>
+<ol start="3">
+<li>
+<p>Selection is diagonal in positions. It multiplies corner $x$ by $e^{\gamma C(x)}$, so it rewards good corners and, in doing so, creates rough patterns again.</p>
+</li>
+<li>
+<p>So one generation is again a split-step method, just in imaginary time. Side by side with QAOA:</p>
+</li>
+</ol>
+<pre><code>                  QAOA (real time)                 genetic algorithm (imaginary time)
+ cost step        exp(-i gamma C)   phase kick     exp(gamma C)   selection
+ mixer step       exp(-i beta A)    rotation       exp(-t L)      mutation, damping
+ normalization    automatic, unitary               divide by the total
+ long-run fate    keeps oscillating                converges to one fixed point
+</code></pre>
+<h2>Where does it converge?</h2>
+<ol>
+<li>
+<p>The power method converges to the eigenvector of $MS$ with the largest eigenvalue. For $0 &lt; q &lt; 1$ every entry of $MS$ is positive, so by Perron-Frobenius this eigenvector is unique and positive, and we converge to it from any starting population.</p>
+</li>
+<li>
+<p>Biologists call this fixed point the <strong>quasispecies</strong> (Eigen 1971). It is not a single best string but a cloud of mutants around the fit strings, the compromise between selection pulling the population together and mutation spreading it out.</p>
+</li>
+<li>
+<p>Let us look at numbers. I use the triangular prism from the last post: 6 vertices, 9 edges, maximum cut 7, and 6 of the 64 bitstrings are maximum cuts, so random guessing hits one with probability 0.094. Here is the probability of a maximum cut in the quasispecies:</p>
+</li>
+</ol>
+<pre><code>                 q = 0.02   q = 0.05   q = 0.1   q = 0.2   q = 0.3
+ gamma = 0.5       0.780      0.554     0.344     0.175     0.119
+ gamma = 1         0.846      0.662     0.450     0.232     0.141
+ gamma = 2         0.876      0.718     0.517     0.276     0.160
+</code></pre>
+<p>More selection and less mutation push the cloud onto the optimum. The expected cut for $\gamma = 1$ goes from 5.22 at $q = 0.2$ to 6.76 at $q = 0.02$.</p>
+<ol start="4">
+<li>And it is fast. For $\gamma = 1$ and $q = 0.05$, starting from the uniform distribution, the probability of a maximum cut over the first generations is</li>
+</ol>
+<pre><code> generation       1      2      3      4      5      6     ...   fixed point
+ P(max cut)     0.365  0.546  0.620  0.647  0.656  0.660   ...      0.662
+</code></pre>
+<p>You can play with this yourself. Pick the selection strength and the mutation rate, then let the population evolve. With an infinite population you see the power method at work. With a finite one you see the lottery on top of it.</p>
+<div class="toy" id="toyEvolve">
+  <div class="toy-head"><span><strong>Toy 1.</strong> Evolving a population on the prism</span></div>
+  <div class="controls">
+    <div class="slider"><label for="gaGamma">γ</label><input type="range" id="gaGamma" min="0" max="300" value="100"><output id="gaGammaOut" for="gaGamma"></output></div>
+    <div class="slider"><label for="gaQ">q</label><input type="range" id="gaQ" min="0" max="500" value="50"><output id="gaQOut" for="gaQ"></output></div>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Population size">
+      <button type="button" id="popInf" aria-pressed="true">N = ∞</button>
+      <button type="button" id="pop200" aria-pressed="false">N = 200</button>
+      <button type="button" id="pop30" aria-pressed="false">N = 30</button>
+    </div>
+    <button type="button" class="btn" id="gaStep">Step</button>
+    <button type="button" class="btn" id="gaRun">Run</button>
+    <button type="button" class="btn" id="gaReset">Reset</button>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k">Generation</span><span class="val" id="gaGen"></span></div>
+    <div class="ro"><span class="k">P(max cut) now</span><span class="val" id="gaPmax"></span></div>
+    <div class="ro"><span class="k">Quasispecies P(max cut)</span><span class="val" id="gaPfix"></span></div>
+    <div class="ro"><span class="k">Expected cut now</span><span class="val" id="gaMean"></span></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="panel-label">Cut value distribution</div>
+      <svg class="plot" id="gaHist" viewBox="0 0 260 172" role="img" aria-label="Distribution of cut values in the current population, with the quasispecies as dashed outlines"></svg>
+      <p class="caption">Bars: the population now, the maximum cut in plum. Dashed outlines: the quasispecies.</p>
+    </div>
+    <div>
+      <div class="panel-label">P(max cut) per generation</div>
+      <svg class="plot" id="gaTraj" viewBox="0 0 260 172" role="img" aria-label="Probability of a maximum cut over the generations"></svg>
+      <p class="caption">Dashed: the quasispecies level. Dotted: random guessing.</p>
+    </div>
+  </div>
+</div>
+<h2>Too much mutation: the error threshold</h2>
+<ol>
+<li>
+<p>Turn up $q$ and the cloud melts. Eigen called this the <strong>error threshold</strong>.</p>
+</li>
+<li>
+<p>It is cleanest on a needle: one master string with fitness advantage $\sigma = e^{\gamma}$, all other strings equal. A child of the master is again the master only with probability $(1-q)^n$. The master can hold its ground as long as</p>
+</li>
+</ol>
+<p>$$
+\sigma\,(1-q)^n &gt; 1 \quad\iff\quad q &lt; q_c = 1 - \sigma^{-1/n} \approx \frac{\gamma}{n} .
+$$</p>
+<ol start="3">
+<li>Numbers for $n = 20$ and $\gamma = 1$, where $q_c = 0.0488$:</li>
+</ol>
+<pre><code> q             0.01   0.02   0.03   0.04   0.045   0.05    0.055
+ P(master)     0.71   0.48   0.29   0.13   0.066   0.006   0.000
+</code></pre>
+<p>Below the threshold, a large part of the population sits on the master. Just above it, the master is basically gone, and the population is spread over the whole cube.</p>
+<ol start="4">
+<li>For optimization this is a warning: the mutation rate has to shrink with the problem size, roughly like $1/n$, or the population forgets what it already found.</li>
+</ol>
+<p>And here you can move the threshold around. The curve is the master's share in the quasispecies for every mutation rate, and the dashed line marks $q_c$.</p>
+<div class="toy" id="toyThreshold">
+  <div class="toy-head"><span><strong>Toy 2.</strong> The error threshold on a needle</span></div>
+  <div class="controls">
+    <div class="slider"><label for="thN">n</label><input type="range" id="thN" min="8" max="40" value="20"><output id="thNOut" for="thN"></output></div>
+    <div class="slider"><label for="thG">γ</label><input type="range" id="thG" min="20" max="300" value="100"><output id="thGOut" for="thG"></output></div>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k">q_c = 1 − e^(−γ/n)</span><span class="val" id="thQc"></span></div>
+    <div class="ro"><span class="k">P(master) at q_c / 2</span><span class="val" id="thBelow"></span></div>
+    <div class="ro"><span class="k">P(master) at 1.25 q_c</span><span class="val" id="thAbove"></span></div>
+    <div class="ro"><span class="k">Random guess 2^(−n)</span><span class="val" id="thUni"></span></div>
+  </div>
+  <svg class="plot" id="thPlot" viewBox="0 0 520 240" role="img" aria-label="Share of the master string in the quasispecies against the mutation rate, with the error threshold marked"></svg>
+  <p class="caption">Larger n makes the drop sharper and moves it to smaller q.</p>
+</div>
+<h2>Plot twist: it is a quantum spin chain</h2>
+<ol>
+<li>For small steps, $M S = e^{-tL} e^{\gamma C} \approx e^{\gamma C - tL}$. So the quasispecies is close to the top eigenvector of $\gamma C - tL$, which is the top eigenvector of</li>
+</ol>
+<p>$$
+C + \kappa A, \qquad \kappa = \frac{t}{\gamma},
+$$</p>
+<p>up to a constant shift. On the prism the total variation distance between the two is 0.02 for $\gamma = 0.2, q = 0.01$, and it grows to 0.18 for $\gamma = 1, q = 0.1$.</p>
+<ol start="2">
+<li>Now remember what $C$ and $A$ are. For MaxCut, $C$ is an Ising energy and $\kappa A = \kappa \sum_i X_i$ is a transverse field. So the quasispecies is the ground state of a <strong>transverse-field Ising model</strong>,</li>
+</ol>
+<p>$$
+H = -\Big(C + \kappa \sum_i X_i\Big).
+$$</p>
+<p>For the continuous-time version of mutation and selection this is an exact equivalence (Baake, Baake and Wagner 1997), and the error threshold turns into the phase transition of the spin chain.</p>
+<ol start="3">
+<li>Two consequences that I find really interesting:</li>
+</ol>
+<p>a) $H$ is <strong>stoquastic</strong>: all its off-diagonal entries are $\le 0$. That is why its ground state is a positive vector and can be a probability distribution at all. The same property lets projector or diffusion Monte Carlo simulate such ground states with walkers that diffuse and branch. Our genetic algorithm with a finite population is exactly such a walker scheme: mutation is the diffusion, selection is the branching.</p>
+<p>b) Lowering the mutation rate slowly, while the population follows its quasispecies, traces the same Hamiltonian path as adiabatic quantum optimization, from a strong transverse field down to the bare cost. The genetic algorithm follows this path in imaginary time, by damping. A quantum computer would follow it in real time, by staying in the ground state.</p>
+<h2>Finite populations</h2>
+<ol>
+<li>
+<p>With $N$ strings, selection is a lottery. Good strings can get lost by bad luck, and a small population can collapse onto a single string far too early (premature convergence). The infinite-population picture is what a large population fluctuates around.</p>
+</li>
+<li>
+<p>Physicists use exactly this scheme as <strong>population annealing</strong> (Hukushima and Iba, Machta): resample a population with Boltzmann weights while lowering the temperature, and move every replica with Monte Carlo steps.</p>
+</li>
+</ol>
+<h2>What about crossover?</h2>
+<ol>
+<li>
+<p>Real genetic algorithms also combine two parents. That makes the dynamics quadratic in $p$, so there is no single matrix and no Perron vector anymore.</p>
+</li>
+<li>
+<p>The Walsh basis still helps. Vose and Wright showed that mutation and crossover simplify in the Walsh basis, and that one generation of the infinite-population algorithm can be computed with fast transforms.</p>
+</li>
+<li>
+<p>Intuitively, crossover recombines good pieces found by different strings (Holland's building blocks) and pushes the population towards product-like distributions. In our picture it is the one ingredient without a clean counterpart on the quantum side.</p>
+</li>
+</ol>
+<h2>So what does this mean for QAOA?</h2>
+<ol>
+<li>
+<p>QAOA alternates the same two operators in real time. The genetic algorithm damps, QAOA rotates phases. The genetic algorithm converges to a positive fixed point that classical sampling can reach. QAOA keeps amplitudes with phases, and phases can interfere.</p>
+</li>
+<li>
+<p>So if a QAOA circuit only does what a mutation-selection process does, there is no reason to expect an advantage. Whatever QAOA adds has to come from interference, which the genetic algorithm, with only positive weights, cannot produce.</p>
+</li>
+<li>
+<p>And for a fair comparison, this genetic algorithm is the natural baseline QAOA has to beat: same graph, same cost, same two moves.</p>
+</li>
+</ol>
+<h2>Literature</h2>
+<p>The algorithm and the biology:</p>
+<ul>
+<li>J. H. Holland, <em>Adaptation in Natural and Artificial Systems</em> (1975). Where genetic algorithms and building blocks come from.</li>
+<li>M. Eigen, <a href="https://pubmed.ncbi.nlm.nih.gov/4942363/">Selforganization of matter and the evolution of biological macromolecules</a>, Naturwissenschaften 58, 465 (1971). The quasispecies and the error threshold.</li>
+</ul>
+<p>The spin-chain picture:</p>
+<ul>
+<li>E. Baake, M. Baake, H. Wagner, <a href="https://pub.uni-bielefeld.de/record/2378376">Ising quantum chain is equivalent to a model of biological evolution</a>, Phys. Rev. Lett. 78, 559 (1997). Mutation and selection as an Ising quantum chain, with exactly solved fitness landscapes.</li>
+<li>S. Bravyi, D. P. DiVincenzo, R. I. Oliveira, B. M. Terhal, <a href="https://arxiv.org/abs/quant-ph/0606140">The complexity of stoquastic local Hamiltonian problems</a> (2006). Why positive ground states make stoquastic Hamiltonians friendlier to classical simulation.</li>
+</ul>
+<p>The Walsh basis and populations:</p>
+<ul>
+<li>M. D. Vose, A. H. Wright, <a href="https://scholarworks.umt.edu/cs_pubs/7">The Simple Genetic Algorithm and the Walsh Transform: Part I, Theory</a>, Evolutionary Computation 6(3) (1998). Mutation and crossover in the Walsh basis.</li>
+<li>R. O'Donnell, <a href="https://arxiv.org/abs/2105.10386">Analysis of Boolean Functions</a>. The noise operator, which is our mutation step.</li>
+<li>J. Machta, <a href="https://arxiv.org/abs/1006.0252">Population annealing with weighted averages</a>, Phys. Rev. E 82, 026704 (2010). Population annealing, introduced by Hukushima and Iba, as a sampler for rough landscapes like spin glasses.</li>
+</ul>
+<p>I put the &quot;genetic algorithm equals QAOA in imaginary time&quot; framing together myself from these sources and the last post, so better check it against them before citing.</p>
+
+<footer>
+  <div class="dashes" aria-hidden="true">----------------------------------------------------------------------------------------------------</div>
+  <p>Author: Lukas Theißinger (Human)<br>Google scholar: <a href="https://scholar.google.com/citations?user=aD3-DrQAAAAJ&amp;hl=de">https://scholar.google.com/citations?user=aD3-DrQAAAAJ&amp;hl=de</a></p>
+</footer>
+</main>
+
+<script>
+(() => {
+/* ---------- engine: pure functions, shared by the page and the tests ---------- */
+const pc = (x) => { let c = 0; while (x) { c += x & 1; x >>= 1; } return c; };
+const PRISM = (() => {
+  const n = 6, N = 1 << n;
+  const edges = [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5]];
+  const C = new Float64Array(N);
+  for (let x = 0; x < N; x++) for (const [i, j] of edges) if (((x >> i) & 1) !== ((x >> j) & 1)) C[x]++;
+  let Cmax = 0; for (let x = 0; x < N; x++) Cmax = Math.max(Cmax, C[x]);
+  return { n, N, C, Cmax };
+})();
+function mutationMatrix(q) {
+  const { n, N } = PRISM, M = new Float64Array(N * N);
+  for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) { const d = pc(x ^ y); M[x * N + y] = Math.pow(q, d) * Math.pow(1 - q, n - d); }
+  return M;
+}
+// one generation of the infinite-population algorithm: selection, then mutation
+function gaStep(p, M, g) {
+  const { N, C } = PRISM, s = new Float64Array(N), out = new Float64Array(N);
+  for (let y = 0; y < N; y++) s[y] = p[y] * Math.exp(g * C[y]);
+  let z = 0;
+  for (let x = 0; x < N; x++) { let acc = 0; for (let y = 0; y < N; y++) acc += M[x * N + y] * s[y]; out[x] = acc; z += acc; }
+  for (let x = 0; x < N; x++) out[x] /= z;
+  return out;
+}
+function quasispecies(M, g) {
+  const { N } = PRISM;
+  let p = new Float64Array(N).fill(1 / N);
+  for (let k = 0; k < 20000; k++) {
+    const p2 = gaStep(p, M, g);
+    let d = 0; for (let x = 0; x < N; x++) d += Math.abs(p2[x] - p[x]);
+    p = p2; if (d < 1e-13) break;
+  }
+  return p;
+}
+function cutHistogram(p) {
+  const { N, C, Cmax } = PRISM, h = new Float64Array(Cmax + 1);
+  for (let x = 0; x < N; x++) h[C[x]] += p[x];
+  return h;
+}
+// finite population: multinomial selection with weights exp(g C), then independent bit flips
+function finiteStep(pop, g, q, rnd) {
+  const { n, C } = PRISM, m = pop.length, cum = new Float64Array(m);
+  let tot = 0;
+  for (let i = 0; i < m; i++) { tot += Math.exp(g * C[pop[i]]); cum[i] = tot; }
+  const out = new Int32Array(m);
+  for (let i = 0; i < m; i++) {
+    const r = rnd() * tot; let lo = 0, hi = m - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < r) lo = mid + 1; else hi = mid; }
+    let x = pop[lo];
+    for (let b = 0; b < n; b++) if (rnd() < q) x ^= 1 << b;
+    out[i] = x;
+  }
+  return out;
+}
+function populationDistribution(pop) {
+  const p = new Float64Array(PRISM.N);
+  for (const x of pop) p[x] += 1 / pop.length;
+  return p;
+}
+// needle landscape reduced to Hamming classes k = distance from the master string
+function binom(n, k) { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; }
+function masterShare(n, g, q) {
+  const m = n + 1, B = new Float64Array(m * m), f0 = Math.exp(g);
+  for (let k = 0; k <= n; k++) for (let a = 0; a <= k; a++) {
+    const pa = binom(k, a) * Math.pow(q, a) * Math.pow(1 - q, k - a);
+    if (pa === 0) continue;
+    for (let b = 0; b <= n - k; b++) {
+      const pb = binom(n - k, b) * Math.pow(q, b) * Math.pow(1 - q, n - k - b);
+      B[(k - a + b) * m + k] += pa * pb * (k === 0 ? f0 : 1);
+    }
+  }
+  // repeated squaring: the columns of a high power are proportional to the Perron vector
+  let P = B;
+  for (let it = 0; it < 18; it++) {
+    const P2 = new Float64Array(m * m);
+    for (let i = 0; i < m; i++) for (let k = 0; k < m; k++) { const v = P[i * m + k]; if (v === 0) continue; for (let j = 0; j < m; j++) P2[i * m + j] += v * P[k * m + j]; }
+    let mx = 0; for (let i = 0; i < m * m; i++) if (P2[i] > mx) mx = P2[i];
+    for (let i = 0; i < m * m; i++) P2[i] /= mx;
+    P = P2;
+  }
+  let best = 0, bs = -1;
+  for (let j = 0; j < m; j++) { let s = 0; for (let i = 0; i < m; i++) s += P[i * m + j]; if (s > bs) { bs = s; best = j; } }
+  return P[best] / bs;
+}
+/* ---------- end engine ---------- */
+
+/* ---------- page: two toys ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const txt = (parent, x, y, s, cls, anchor) => { const t = el('text', { x, y, class: cls || 'lbl', 'text-anchor': anchor || 'middle' }, parent); t.textContent = s; return t; };
+const $ = (id) => document.getElementById(id);
+const pmaxOf = (p) => { let s = 0; for (let x = 0; x < PRISM.N; x++) if (PRISM.C[x] === PRISM.Cmax) s += p[x]; return s; };
+const meanOf = (p) => { let s = 0; for (let x = 0; x < PRISM.N; x++) s += p[x] * PRISM.C[x]; return s; };
+
+/* Toy 1: evolving a population on the prism */
+const T1 = { g: 1, q: 0.05, mode: 'inf', size: 200, gen: 0, p: null, pop: null, M: null, pfix: null, traj: [], timer: null, pending: false };
+const current = () => (T1.mode === 'inf' ? T1.p : populationDistribution(T1.pop));
+function t1Recompute() { T1.M = mutationMatrix(T1.q); T1.pfix = quasispecies(T1.M, T1.g); }
+function t1Reset() {
+  T1.gen = 0;
+  T1.p = new Float64Array(PRISM.N).fill(1 / PRISM.N);
+  T1.pop = new Int32Array(T1.size).map(() => Math.floor(Math.random() * PRISM.N));
+  T1.traj = [[0, pmaxOf(current())]];
+  t1Draw();
+}
+function t1Step() {
+  if (T1.mode === 'inf') T1.p = gaStep(T1.p, T1.M, T1.g);
+  else T1.pop = finiteStep(T1.pop, T1.g, T1.q, Math.random);
+  T1.gen += 1;
+  T1.traj.push([T1.gen, pmaxOf(current())]);
+  if (T1.traj.length > 61) T1.traj.shift();
+  t1Draw();
+}
+function t1Draw() {
+  const p = current();
+  $('gaGen').textContent = String(T1.gen);
+  $('gaPmax').textContent = pmaxOf(p).toFixed(3);
+  $('gaPfix').textContent = pmaxOf(T1.pfix).toFixed(3);
+  $('gaMean').textContent = meanOf(p).toFixed(2);
+  // histogram of cut values
+  const hs = $('gaHist'); hs.textContent = '';
+  const h = cutHistogram(p), hf = cutHistogram(T1.pfix), K = PRISM.Cmax + 1;
+  let top = 0.05; for (let c = 0; c < K; c++) top = Math.max(top, h[c], hf[c]);
+  const x0 = 16, bw = (250 - x0) / K, base = 140;
+  el('line', { x1: x0 - 4, x2: 254, y1: base, y2: base, class: 'base' }, hs);
+  for (let c = 0; c < K; c++) {
+    const hh = 118 * h[c] / top, hfh = 118 * hf[c] / top;
+    el('rect', { x: x0 + c * bw + 3, y: base - hh, width: bw - 6, height: Math.max(hh, 0.5), class: c === PRISM.Cmax ? 'bar-n' : 'bar-p' }, hs);
+    if (hfh > 0.3) el('rect', { x: x0 + c * bw + 1.5, y: base - hfh, width: bw - 3, height: hfh, class: 'ref' }, hs);
+    txt(hs, x0 + c * bw + bw / 2, base + 14, String(c), 'lbl');
+  }
+  txt(hs, 254, 10, `max ${top.toFixed(2)}`, 'lbl', 'end');
+  txt(hs, 133, 166, 'cut value', 'lbl');
+  // P(max cut) per generation
+  const ts = $('gaTraj'); ts.textContent = '';
+  const L = 34, R = 250, TOP = 12, B = 140;
+  const g0 = T1.traj[0][0], g1 = Math.max(g0 + 20, T1.traj[T1.traj.length - 1][0]);
+  const X = (gen) => L + (R - L) * (gen - g0) / (g1 - g0), Y = (v) => B - (B - TOP) * v;
+  [0, 0.5, 1].forEach((v) => { el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), class: 'grid' }, ts); txt(ts, L - 6, Y(v) + 4, v.toFixed(1), 'lbl', 'end'); });
+  el('line', { x1: L, x2: R, y1: Y(pmaxOf(T1.pfix)), y2: Y(pmaxOf(T1.pfix)), class: 'ref' }, ts);
+  el('line', { x1: L, x2: R, y1: Y(6 / 64), y2: Y(6 / 64), class: 'uni' }, ts);
+  el('polyline', { points: T1.traj.map(([gg, v]) => `${X(gg).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), class: 'trace' }, ts);
+  const [lg, lv] = T1.traj[T1.traj.length - 1];
+  el('circle', { cx: X(lg), cy: Y(lv), r: 3, class: 'dot' }, ts);
+  txt(ts, L, B + 14, String(g0), 'lbl', 'start');
+  txt(ts, R, B + 14, String(g1), 'lbl', 'end');
+  txt(ts, (L + R) / 2, 166, 'generation', 'lbl');
+}
+function t1Sliders() {
+  T1.g = $('gaGamma').value / 100; T1.q = $('gaQ').value / 1000;
+  $('gaGammaOut').textContent = T1.g.toFixed(2); $('gaQOut').textContent = T1.q.toFixed(3);
+  if (T1.pending) return;
+  T1.pending = true;
+  requestAnimationFrame(() => { T1.pending = false; t1Recompute(); t1Draw(); });
+}
+function t1SetMode(mode, size) {
+  T1.mode = mode; T1.size = size;
+  [['popInf', 'inf', 0], ['pop200', 'fin', 200], ['pop30', 'fin', 30]].forEach(([id, m, s]) => $(id).setAttribute('aria-pressed', String(m === mode && (m === 'inf' || s === size))));
+  t1Reset();
+}
+function t1Run() {
+  if (T1.timer) { clearInterval(T1.timer); T1.timer = null; $('gaRun').textContent = 'Run'; return; }
+  T1.timer = setInterval(t1Step, 160); $('gaRun').textContent = 'Pause';
+}
+
+/* Toy 2: the error threshold on a needle */
+const T2 = { n: 20, g: 1, job: 0, pts: [] };
+function t2Inputs() {
+  T2.n = +$('thN').value; T2.g = $('thG').value / 100;
+  $('thNOut').textContent = String(T2.n); $('thGOut').textContent = T2.g.toFixed(2);
+  const qc = 1 - Math.exp(-T2.g / T2.n), qmax = Math.min(0.5, 2.5 * qc), K = 80, job = ++T2.job;
+  T2.pts = []; T2.qc = qc; T2.qmax = qmax;
+  $('thQc').textContent = qc.toFixed(4);
+  $('thBelow').textContent = masterShare(T2.n, T2.g, qc / 2).toFixed(3);
+  $('thAbove').textContent = masterShare(T2.n, T2.g, 1.25 * qc).toFixed(4);
+  $('thUni').textContent = Math.pow(2, -T2.n).toExponential(1);
+  let i = 0;
+  const chunk = () => {
+    if (job !== T2.job) return;
+    for (let c = 0; c < 10 && i < K; c++, i++) { const q = qmax * i / (K - 1); T2.pts.push([q, masterShare(T2.n, T2.g, q)]); }
+    t2Draw();
+    if (i < K) requestAnimationFrame(chunk);
+  };
+  requestAnimationFrame(chunk);
+}
+function t2Draw() {
+  const s = $('thPlot'); s.textContent = '';
+  const L = 56, R = 500, TOP = 16, B = 196;
+  const X = (q) => L + (R - L) * q / T2.qmax, Y = (v) => B - (B - TOP) * v;
+  [0, 0.5, 1].forEach((v) => { el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), class: 'grid' }, s); txt(s, L - 8, Y(v) + 4, v.toFixed(1), 'lbl', 'end'); });
+  [0, 0.5, 1].forEach((f) => txt(s, L + (R - L) * f, B + 16, (T2.qmax * f).toFixed(3), 'lbl'));
+  el('line', { x1: X(T2.qc), x2: X(T2.qc), y1: TOP, y2: B, class: 'qline' }, s);
+  txt(s, X(T2.qc) + 6, TOP + 12, 'q_c', 'lbl-ink', 'start');
+  if (T2.pts.length > 1) el('polyline', { points: T2.pts.map(([q, v]) => `${X(q).toFixed(1)},${Y(v).toFixed(1)}`).join(' '), class: 'trace' }, s);
+  txt(s, (L + R) / 2, B + 34, 'mutation rate q', 'lbl');
+  const t = txt(s, 16, (TOP + B) / 2, 'P(master)', 'lbl');
+  t.setAttribute('transform', `rotate(-90 16 ${(TOP + B) / 2})`);
+}
+
+/* wiring */
+$('gaGamma').addEventListener('input', t1Sliders);
+$('gaQ').addEventListener('input', t1Sliders);
+$('popInf').addEventListener('click', () => t1SetMode('inf', 0));
+$('pop200').addEventListener('click', () => t1SetMode('fin', 200));
+$('pop30').addEventListener('click', () => t1SetMode('fin', 30));
+$('gaStep').addEventListener('click', t1Step);
+$('gaRun').addEventListener('click', t1Run);
+$('gaReset').addEventListener('click', t1Reset);
+$('thN').addEventListener('input', t2Inputs);
+$('thG').addEventListener('input', t2Inputs);
+T1.g = $('gaGamma').value / 100; T1.q = $('gaQ').value / 1000;
+$('gaGammaOut').textContent = T1.g.toFixed(2); $('gaQOut').textContent = T1.q.toFixed(3);
+t1Recompute(); t1Reset();
+t2Inputs();
+
+})();
+</script>

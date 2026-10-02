@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QAOA on the Hamming Cube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=STIX+Two+Text:ital@0;1&display=swap">
+<style>
+/* Layout: a single notebook column like a Markdown post on GitHub; teal marks the ground state and the slide, plum the maximum cut and the mixer angle. */
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --rule: #d1d9e0;
+  --code-bg: #f6f8fa;
+  --accent: #0969da;
+  --pos: #0e7a88;
+  --neg: #9b3d8a;
+  --ink: #1f2328;
+  --panel: #ffffff;
+  --heat-lo: #f2f5f7;
+  --heat-mid: #5aa9b3;
+  --heat-hi: #123f5c;
+  --phase-s: 62%;
+  --phase-l: 42%;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-math: "STIX Two Text", "Times New Roman", Times, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --rule: #3d444d; --code-bg: #151b23; --accent: #4493f8;
+    --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
+    --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+    --phase-s: 60%; --phase-l: 64%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --rule: #3d444d; --code-bg: #151b23; --accent: #4493f8;
+  --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
+  --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
+  --phase-s: 60%; --phase-l: 64%;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.frame { max-width: 820px; margin: 0 auto; padding-inline: 20px; padding-block: 32px 64px; }
+.frame > * { min-width: 0; }
+
+h1, h2, h3 { font-weight: 600; line-height: 1.25; text-wrap: balance; }
+h1 { font-size: 2em; margin: 0 0 16px; padding-bottom: 0.3em; border-bottom: 1px solid var(--rule); }
+h2 { font-size: 1.5em; margin: 36px 0 16px; padding-bottom: 0.3em; border-bottom: 1px solid var(--rule); }
+h3 { font-size: 1.25em; margin: 24px 0 16px; }
+p, ul, ol, blockquote, pre, figure, .tablewrap, .toy { margin: 0 0 16px; }
+ul, ol { padding-left: 2em; }
+li + li { margin-top: 0.25em; }
+strong { font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+blockquote { padding: 0 1em; color: var(--muted); border-left: 0.25em solid var(--rule); }
+blockquote strong { color: var(--fg); }
+
+code { font-family: var(--f-mono); font-size: 85%; background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 6px; }
+pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.45; background: var(--code-bg); padding: 16px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: inherit; border-radius: 0; }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14.5px; min-width: 640px; }
+th, td { border: 1px solid var(--rule); padding: 6px 13px; text-align: left; vertical-align: top; }
+th { font-weight: 600; }
+tr:nth-child(2n) td { background: var(--code-bg); }
+
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; padding: 2px 0; }
+
+figure { display: grid; gap: 8px; }
+figure.narrow { max-width: 340px; }
+figure.medium { max-width: 640px; }
+figcaption, .caption { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+.toy { border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 14px; }
+.toy-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { font: 500 13px var(--f-body); padding: 5px 12px; border: 0; background: var(--code-bg); color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.btn { font: 500 13px var(--f-body); padding: 5px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--code-bg); color: var(--fg); cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.slider { display: flex; align-items: center; gap: 10px; flex: 1 1 240px; min-width: 0; }
+.slider label { font-family: var(--f-math); font-style: italic; font-size: 1.1rem; min-width: 1.2em; }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider output { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-width: 6.5em; font-variant-numeric: tabular-nums; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.three { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 760px) { .three { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 600px) { .two, .three { grid-template-columns: minmax(0, 1fr); } }
+.panel-label { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.readouts { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.ro { display: grid; gap: 1px; }
+.ro .k { font-size: 12px; color: var(--muted); }
+.ro .val { font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+
+svg.plot { display: block; width: 100%; height: auto; overflow: visible; }
+svg .edge { stroke: var(--rule); stroke-width: 2; }
+svg .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+svg .lbl-ink { fill: var(--ink); font-family: var(--f-mono); font-size: 11px; }
+svg .base { stroke: var(--rule); stroke-width: 1; }
+svg .bar-p { fill: var(--pos); }
+svg .bar-n { fill: var(--neg); }
+svg .bar-m { fill: var(--muted); opacity: 0.45; }
+svg .ref { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 2; }
+svg .dial { fill: none; stroke: var(--rule); stroke-width: 1.2; }
+svg .startring { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 3 3; }
+svg .vtx { stroke: var(--panel); stroke-width: 1.5; cursor: pointer; }
+svg .gedge { stroke: var(--rule); stroke-width: 2; stroke-dasharray: 4 4; }
+svg .gedge.cut { stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: none; }
+svg .gv0 { fill: var(--pos); }
+svg .gv1 { fill: var(--neg); }
+svg .gvl { fill: var(--panel); font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
+
+/* A problem graph and its cost landscape on the same eight assignments. */
+.cut-panels { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr); gap: 20px; align-items: center; }
+.toy[hidden], #cutFallback[hidden] { display: none; }
+.cut-edges { display: flex; flex-wrap: wrap; gap: 8px 18px; border: 0; padding: 0; margin: 0; }
+.cut-edges legend { padding: 0; margin-bottom: 4px; font-size: 14px; font-weight: 600; }
+.cut-edges label { display: inline-flex; align-items: center; gap: 6px; font: 14px var(--f-mono); cursor: pointer; }
+.cut-edges input { accent-color: var(--accent); width: 17px; height: 17px; }
+.cut-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; color: var(--muted); }
+.cut-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cut-swatch { display: inline-block; width: 16px; height: 16px; border: 1px solid var(--muted); border-radius: 50%; }
+.cut-value-0 { fill: var(--code-bg); background: var(--code-bg); }
+.cut-value-1 { fill: var(--pos); background: var(--pos); }
+.cut-value-2 { fill: var(--heat-hi); background: var(--heat-hi); }
+.cut-ring-key { border: 2px solid var(--accent); background: var(--panel); }
+#maxcut-cube .panel-label { font-size: 12px; letter-spacing: 0.02em; }
+#maxcut-cube .cut-bitlabel { font: 13px var(--f-mono); fill: var(--ink); }
+#maxcut-cube .cut-score { font: 500 14px var(--f-mono); fill: var(--bg); }
+#maxcut-cube .cut-score-0 { fill: var(--ink); }
+#maxcut-cube .cut-score-1 { fill: var(--panel); }
+#maxcut-cube .cut-node { cursor: pointer; outline: none; }
+#maxcut-cube .cut-node .cut-disk { stroke: var(--muted); stroke-width: 1; }
+#maxcut-cube .cut-node:hover .cut-disk { stroke: var(--accent); stroke-width: 2.5; }
+#maxcut-cube .cut-focus { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 3 3; visibility: hidden; }
+#maxcut-cube .cut-node:focus-visible .cut-focus { visibility: visible; }
+#maxcut-cube .cut-selection { fill: none; stroke: var(--accent); stroke-width: 3; pointer-events: none; }
+#maxcut-cube .cut-neighbor-edge { stroke: var(--accent); stroke-width: 2.5; }
+#maxcut-cube .cut-graph-edge { stroke-width: 3; }
+#maxcut-cube .cut-edge-label { font: 12px var(--f-mono); fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 5; stroke-linejoin: round; }
+.cut-summary { background: var(--code-bg); border-radius: 6px; padding: 12px; display: grid; gap: 6px; }
+.cut-summary p { margin: 0; }
+.cut-equation { font: 13px/1.7 var(--f-mono); overflow-wrap: anywhere; }
+.cut-partitions { font-size: 14px; }
+.cut-side-0 { color: var(--pos); }
+.cut-side-1 { color: var(--neg); }
+.cut-flips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cut-flips .btn { flex: 1 1 140px; text-align: left; line-height: 1.6; }
+.cut-flips .btn span { display: block; font: 12px/1.6 var(--f-mono); color: var(--muted); }
+.cut-static { display: block; max-width: 100%; height: auto; }
+@media (max-width: 600px) { .cut-panels { grid-template-columns: minmax(0, 1fr); } #cutProblemSvg { max-width: 250px; margin-inline: auto; } }
+
+
+footer { margin-top: 40px; color: var(--muted); font-size: 14px; }
+footer .dashes { font-family: var(--f-mono); white-space: nowrap; overflow: hidden; color: var(--rule); margin-bottom: 8px; }
+footer p { margin: 0; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* The slide and its circuits. */
+svg .grid { stroke: var(--rule); stroke-width: 1; }
+svg .lvl { fill: none; stroke: var(--rule); stroke-width: 1.2; }
+svg .lvl1 { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-opacity: 0.75; }
+svg .lvl0 { fill: none; stroke: var(--pos); stroke-width: 2.6; }
+svg .sline { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+svg .gapbar { stroke: var(--accent); stroke-width: 2.2; }
+svg .trace { fill: none; stroke: var(--pos); stroke-width: 2; stroke-linejoin: round; }
+svg .trace.faint { stroke-opacity: 0.35; stroke-dasharray: 3 3; }
+svg .fine { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-opacity: 0.8; }
+svg .dot { fill: var(--pos); stroke: var(--panel); stroke-width: 1.5; }
+svg .uni { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 1 3; }
+svg .qline { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 6 3; }
+svg .tick { stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; }
+svg .clipmark { fill: var(--ink); }
+
+</style>
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    macros: { ket: ['\\left|#1\\right\\rangle', 1], bra: ['\\left\\langle #1\\right|', 1] }
+  },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+
+<main class="frame">
+<h1 id="top">QAOA on the Hamming Cube</h1>
+<p>In this post, I want to understand what QAOA actually does when we stop looking at it as a list of gates.</p>
+<p>The short version: QAOA is a slow slide from an easy matrix to a hard one, chopped into pieces, and then cleverly cut short. The easy matrix is the Hamming cube itself, the hard one holds the answer to our problem. But let us build this up slowly.</p>
+<p>All we need for this is a bit of linear algebra (matrices, eigenvalues, eigenvectors) and a bit of quantum computing (qubits, the Pauli matrices $X$ and $Z$, the Hadamard gate). Everything else we build on the way.</p>
+<h2>The problem</h2>
+<ol>
+<li>As usual, we begin with the problem setup.</li>
+</ol>
+<p><a id="problem-1"></a></p>
+<blockquote>
+<p><strong>Problem 1: MaxCut.</strong><br />
+Given a graph $G = (V, E)$ with $n$ vertices, split the vertices into two sides such that as many edges as possible go between the two sides.</p>
+</blockquote>
+<p>We will refer to this as <a href="#problem-1">Problem 1</a>.</p>
+<ol start="2">
+<li>We write a split as a bitstring $x \in \{0,1\}^n$, where $x_i$ tells us on which side vertex $i$ sits. The number of cut edges is</li>
+</ol>
+<p>$$
+C(x) = \sum_{(i,j) \in E} [x_i \neq x_j],
+$$</p>
+<p>and we are looking for $x^* = \arg\max_x C(x)$.</p>
+<p>Pretty simple I would say. Unfortunately there are $2^n$ bitstrings, so trying all of them is not an option for large $n$. QAOA is one quantum attempt at this. Let us see what it really does.</p>
+<h2>The stage: bitstrings on a cube</h2>
+<ol>
+<li>A bitstring describes a whole candidate cut. Let us give each of the $2^n$ bitstrings its own corner and connect two corners whenever they differ in exactly one bit. With one bit we get a line segment, with two a square, and with three the familiar cube. In general this is the <strong>Hamming cube</strong>, or Boolean hypercube, $Q_n$.</li>
+</ol>
+<p>Every corner has $n$ neighbors, one for each bit we can flip. The shortest path between $x$ and $y$ has length $d_H(x,y)$, the number of bits in which they differ. So this picture also tells us what a small change to a candidate solution means: one step along a cube edge moves one vertex of the problem graph to the other side of the cut.</p>
+<ol start="2">
+<li>Let us put an actual MaxCut problem onto this cube. Take the three-vertex path $1\! -\! 2\! -\! 3$, and write the bits in vertex order, $x_1x_2x_3$. Its cost is</li>
+</ol>
+<p>$$
+C(x) = [x_1 \neq x_2] + [x_2 \neq x_3].
+$$</p>
+<p>At $000$, all three vertices are on the same side and $C(000)=0$. At $010$, vertex 2 is on the other side from vertices 1 and 3, so both edges are cut and $C(010)=2$. These assignments are neighbors on the cube: flipping the middle bit takes us from one to the other.</p>
+<div class="toy" id="maxcut-cube" aria-labelledby="cutTitle" hidden>
+  <div class="toy-head"><strong id="cutTitle">From a cut to a corner</strong><span class="caption">3 vertices → 8 assignments</span></div>
+  <p class="caption" id="cutInstructions">Select a cube corner, or click a problem vertex to flip its bit. Use Tab and Enter or Space with the keyboard. Change the problem edges to redraw the costs.</p>
+  <fieldset class="cut-edges">
+    <legend>Edges of the problem graph G</legend>
+    <label><input type="checkbox" id="cutEdge12" checked>1–2</label>
+    <label><input type="checkbox" id="cutEdge23" checked>2–3</label>
+    <label><input type="checkbox" id="cutEdge13">1–3</label>
+  </fieldset>
+  <div class="cut-panels">
+    <div>
+      <div class="panel-label">Problem graph G · one cut</div>
+      <svg class="plot" id="cutProblemSvg" viewBox="0 0 240 225" role="group" aria-label="MaxCut problem graph. Activate a vertex to change its side." aria-describedby="cutInstructions"></svg>
+      <p class="caption"><span class="cut-side-0">Teal: side 0.</span> <span class="cut-side-1">Plum: side 1.</span><br>Solid edges are cut; dashed edges are uncut.</p>
+    </div>
+    <div>
+      <div class="panel-label">Search graph Q₃ · all cuts</div>
+      <svg class="plot" id="cutCubeSvg" viewBox="0 0 420 310" role="group" aria-label="Hamming cube: eight assignments joined by twelve single-bit flips. The number at each corner is its cut size." aria-describedby="cutInstructions"></svg>
+      <div class="cut-legend" aria-label="Cube cost colors">
+        <span>Cut size C(x):</span>
+        <span><i class="cut-swatch cut-value-0" aria-hidden="true"></i>0</span>
+        <span><i class="cut-swatch cut-value-1" aria-hidden="true"></i>1</span>
+        <span><i class="cut-swatch cut-value-2" aria-hidden="true"></i>2</span>
+        <span><i class="cut-swatch cut-ring-key" aria-hidden="true"></i>Selected</span>
+      </div>
+    </div>
+  </div>
+  <div class="cut-summary" role="status" aria-live="polite" aria-atomic="true">
+    <p><strong id="cutSelected"></strong></p>
+    <p class="cut-partitions" id="cutPartitions"></p>
+    <p class="cut-equation" id="cutEquation"></p>
+    <p class="caption" id="cutOptima"></p>
+  </div>
+  <div>
+    <p class="caption" style="margin-bottom: 6px">One step along the cube: move one problem vertex to the other side.</p>
+    <div class="cut-flips" id="cutFlips"></div>
+  </div>
+  <div class="controls"><button class="btn" type="button" id="cutComplement">Flip all bits</button><button class="btn" type="button" id="cutReset">Reset example</button></div>
+  <p class="caption">Each corner is a complete assignment, written x₁x₂x₃. Blue cube edges lead to its three one-bit neighbors. The costs are values on corners; the cube edges represent possible moves.</p>
+</div>
+<figure id="cutFallback">
+  <img class="cut-static" src="assets/maxcut-hypercube.svg" width="820" height="390" alt="The path graph with assignment 010 cuts both edges. On the Hamming cube, all eight assignments are labeled with their cut sizes; 010 and 101 attain the maximum of 2.">
+  <figcaption>A cut on the problem graph becomes one corner of the cube. The number inside each cube corner is $C(x)$; the blue ring marks the selected assignment.</figcaption>
+</figure>
+<p>The values on all eight corners of the path example are:</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th scope="col">$x$</th><th scope="col">000</th><th scope="col">001</th><th scope="col">010</th><th scope="col">011</th><th scope="col">100</th><th scope="col">101</th><th scope="col">110</th><th scope="col">111</th></tr></thead>
+<tbody><tr><th scope="row">$C(x)$</th><td>0</td><td>1</td><td>2</td><td>1</td><td>1</td><td>2</td><td>1</td><td>0</td></tr></tbody>
+</table>
+</div>
+<ol start="3">
+<li>There are two graphs in this picture. The <strong>problem graph</strong> $G$ has $n$ vertices; its edges tell us which pairs contribute to the cut. The <strong>search graph</strong> $Q_n$ has $2^n$ corners; its edges tell us which assignments differ by a single bit. The cost function assigns a number to each corner of $Q_n$. This is our optimization landscape, and for MaxCut we want the highest values.</li>
+</ol>
+<p>Try adding the problem edge $(1,3)$ to close the path into a triangle. The cube still has the same eight corners and twelve edges, but its cost values change: now every nonconstant bitstring cuts two edges. Changing the problem changes the landscape on the cube. Also notice that $010$ and $101$ have the same cost. Flipping every bit just swaps the two sides of a cut, so $C(x)=C(\bar x)$ for every MaxCut instance. We keep both assignments as distinct cube corners and quantum basis states.</p>
+<ol start="4">
+<li>Now the quantum part. An $n$-qubit basis state $\ket{x}$ is labeled by one of these bitstrings. A state $\ket{\psi}=\sum_x\psi(x)\ket{x}$ places a complex amplitude on every corner. The cost operator reads the value at a corner,</li>
+</ol>
+<p>$$
+C\ket{x}=C(x)\ket{x},
+$$</p>
+<p>while the Pauli operator $X_i$ flips bit $i$ and takes us to a neighboring corner. The adjacency matrix of the cube is therefore</p>
+<p>$$
+A = X_1 + X_2 + \dots + X_n .
+$$</p>
+<p>This is exactly the operator QAOA calls the <strong>mixer</strong> (usually written $B$). We now have the two ingredients in one picture: $C$ gives the values on the corners, and $A$ connects corners through single-bit flips. Both are just $2^n \times 2^n$ matrices, and as we will see now, the answer to Problem 1 is hidden in one of them.</p>
+<h2>The answer is hidden in a matrix</h2>
+<ol>
+<li>
+<p>Look at $C$ again. It is a diagonal matrix: the basis vector $\ket{x}$ of every corner is an eigenvector, with the cut value $C(x)$ as eigenvalue. So a maximum cut is simply an eigenvector of $C$ with the largest eigenvalue.</p>
+</li>
+<li>
+<p>For the circuits later, it helps to write $C$ with Pauli matrices. $Z_i$ reads bit $i$ and turns it into a sign,</p>
+</li>
+</ol>
+<p>$$
+Z_i \ket{x} = (-1)^{x_i} \ket{x} .
+$$</p>
+<p>So $Z_i Z_j \ket{x} = +\ket{x}$ if $x_i = x_j$ (same side) and $-\ket{x}$ if $x_i \neq x_j$ (different sides). That means $\tfrac{1}{2}(I - Z_i Z_j)$ is $0$ for an uncut edge and $1$ for a cut edge, and summing over the edges gives</p>
+<p>$$
+C = \sum_{(i,j) \in E} \frac{1}{2}\big(I - Z_i Z_j\big) .
+$$</p>
+<ol start="3">
+<li>Physicists like to minimize energy instead of maximizing cuts, so we flip the sign and call</li>
+</ol>
+<p>$$
+H_C = -C
+$$</p>
+<p>the <strong>problem Hamiltonian</strong>. A Hamiltonian is just a Hermitian matrix. Its eigenvalues are called energies, and the eigenvector with the smallest eigenvalue is called the <strong>ground state</strong>. So the ground states of $H_C$ are exactly the maximum cuts.</p>
+<ol start="4">
+<li>Great, the answer is hidden in a matrix: it is the ground state of $H_C$. Unfortunately, $H_C$ is diagonal, so finding its ground state means finding the smallest of $2^n$ numbers on the diagonal, which is exactly the problem we started with. The problem is the same, it just wears a lab coat now.</li>
+</ol>
+<p>But a matrix can do something a list of numbers cannot: we can turn it continuously into another matrix. For that we need a second matrix whose ground state is easy. Luckily, we already have one.</p>
+<h2>An easy matrix: the cube itself</h2>
+<ol>
+<li>Take the mixer from above and put a minus sign in front of it:</li>
+</ol>
+<p>$$
+H_B = -A = -\big(X_1 + X_2 + \dots + X_n\big) .
+$$</p>
+<p>Let us look at one qubit first. $-X$ has the eigenvector $\ket{+} = (\ket{0} + \ket{1})/\sqrt{2}$ with eigenvalue $-1$ and the eigenvector $\ket{-} = (\ket{0} - \ket{1})/\sqrt{2}$ with eigenvalue $+1$. So the ground state of one qubit is $\ket{+}$, which is just a Hadamard gate applied to $\ket{0}$.</p>
+<ol start="2">
+<li>The $n$ terms of $H_B$ act on different qubits, so its eigenvalues are sums of $n$ numbers $\pm 1$. The smallest one, $-n$, belongs to $\ket{+}$ on every qubit:</li>
+</ol>
+<p>$$
+\ket{+}^{\otimes n} = \frac{1}{\sqrt{2^n}} \sum_{x} \ket{x} .
+$$</p>
+<p>On the cube this makes a lot of sense. Every corner has $n$ neighbors, so the adjacency matrix $A$ maps the all-equal vector to $n$ times itself.</p>
+<ol start="3">
+<li>This is the most undecided state possible: every bitstring with the same amplitude. Measuring it is random guessing. Not a great answer, but we can prepare it with one layer of Hadamard gates, and that is all we want from it.</li>
+</ol>
+<p>So now we have two matrices: $H_B$, whose ground state we can make but do not care about, and $H_C$, whose ground state we care about but cannot make. Naive as I am, my first idea is: start in one and slowly turn it into the other.</p>
+<h2>Sliding from the cube to the cut</h2>
+<ol>
+<li>We define a whole family of Hamiltonians,</li>
+</ol>
+<p>$$
+H(s) = (1 - s)\,H_B + s\,H_C, \qquad s \in [0, 1] .
+$$</p>
+<p>At $s = 0$ only the cube matters: who is next to whom. At $s = 1$ only the cut values matter: how good every corner is. In between, it is a bit of both.</p>
+<ol start="2">
+<li>
+<p>Now the physics. The <strong>adiabatic theorem</strong> says: if you start in the ground state and change the Hamiltonian slowly enough, you stay in the ground state. It is a bit like moving a sleeping cat. Do it slowly and the cat stays asleep. Do it too fast and the cat wakes up and does something you did not plan for. So if we slide $s$ from 0 to 1 slowly, we start in $\ket{+}^{\otimes n}$ and end in a maximum cut. Problem solved!</p>
+</li>
+<li>
+<p>Let us see this on the smallest possible example, one qubit with $H(s) = -(1-s)\,X - s\,Z$. As a matrix,</p>
+</li>
+</ol>
+<p>$$
+H(s) = \begin{pmatrix} -s &amp; -(1-s) \\ -(1-s) &amp; s \end{pmatrix}, \qquad E_\pm(s) = \pm\sqrt{s^2 + (1-s)^2} .
+$$</p>
+<p>The ground state turns smoothly from $\ket{+}$ at $s = 0$ into $\ket{0}$ at $s = 1$, and the two energy levels never touch. Their distance is called the <strong>gap</strong>, and here it is smallest in the middle, where it is $\sqrt{2}$:</p>
+<pre><code> energy
+   +1 |*.                              .*
+      |   '*..                    ..*'
+      |        ''**..........**''          upper level
+      |
+      |        ..**''''''''''**..          lower level
+      |   .*''                    ''*.
+   -1 |*'                              '*
+      +-------------------------------------&gt; s
+      0               1/2                1
+                  smallest gap: sqrt(2)
+</code></pre>
+<ol start="4">
+<li>One qubit is a bit boring, so from now on our running example is the triangular prism: two triangles, connected by three rungs.</li>
+</ol>
+<pre><code>            1
+           /|\
+          / 4 \
+         / / \ \
+        / 6---5 \
+       / /     \ \
+      3-----------2
+
+   triangles: 1-2-3 and 4-5-6     rungs: 1-4, 2-5, 3-6
+</code></pre>
+<p>It has 6 vertices and 9 edges, so $2^6 = 64$ corners on the cube. A triangle can never have all three edges cut (two of its three vertices always end up on the same side), so the best we can do is $2 + 2 + 3 = 7$. Exactly 6 of the 64 bitstrings reach 7, so random guessing finds a maximum cut with probability $6/64 \approx 0.094$.</p>
+<ol start="5">
+<li>Along the slide, the ground state of $H(s)$ slowly moves its weight onto the maximum cuts:</li>
+</ol>
+<pre><code> s                      0       0.25    0.5     0.75    1
+ P(maximum cut)         0.094   0.139   0.266   0.627   1.000
+ expected cut           4.50    4.85    5.49    6.50    7.00
+</code></pre>
+<ol start="6">
+<li>A nice side effect of symmetry: the prism looks the same if you rotate it, mirror it or swap the two triangles, and the cut does not change if you flip all bits. $\ket{+}^{\otimes n}$, $H_B$ and $H_C$ do not care about any of this either. Because of that, the slide can only ever reach 8 particular combinations of the 64 basis states. Effectively we are sliding through an $8 \times 8$ matrix, not a $64 \times 64$ one.</li>
+</ol>
+<p>You can play with this yourself. Move $s$ and watch the levels and the ground state, or press Play and let the slide run.</p>
+<div class="toy" id="toySlide">
+  <div class="toy-head"><span><strong>Toy 1.</strong> Sliding from the cube to the cut on the prism</span></div>
+  <div class="controls">
+    <div class="slider"><label for="slS">s</label><input type="range" id="slS" min="0" max="100" value="0"><output id="slSOut" for="slS"></output></div>
+    <button type="button" class="btn" id="slPlay">Play</button>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k">Gap at this s</span><span class="val" id="slGap"></span></div>
+    <div class="ro"><span class="k">Smallest gap on the slide</span><span class="val" id="slMin"></span></div>
+    <div class="ro"><span class="k">P(maximum cut)</span><span class="val" id="slP"></span></div>
+    <div class="ro"><span class="k">Expected cut</span><span class="val" id="slE"></span></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="panel-label">Energy levels of H(s)</div>
+      <svg class="plot" id="slLevels" viewBox="0 0 300 204" role="img" aria-label="The eight energy levels of H(s) that the slide can reach, plotted against s, with the gap marked at the current s"></svg>
+      <p class="caption">The 8 levels the slide can reach. Teal: the ground state. Dark: the next level up. The blue bar is the gap.</p>
+    </div>
+    <div>
+      <div class="panel-label">Ground state: what you would measure</div>
+      <svg class="plot" id="slHist" viewBox="0 0 300 204" role="img" aria-label="Probability of each cut value when the ground state of H(s) is measured, compared with random guessing"></svg>
+      <p class="caption">Probability of each cut value, the maximum cut in plum. Dashed outlines: random guessing. Cuts of 1 and 2 are impossible on the prism.</p>
+    </div>
+  </div>
+</div>
+<p>So far so good. But &quot;slowly enough&quot; is doing a lot of work in that sentence. How slow is slowly enough?</p>
+<h2>How slow is slowly enough? The gap</h2>
+<ol>
+<li>
+<p>The answer is the gap. When the two lowest levels come close to each other, a small push is enough to kick the state from the lower level to the upper one, and then we end up somewhere we did not want to be. As a rule of thumb, the total time we need grows like one over the smallest gap squared.</p>
+</li>
+<li>
+<p>The prism is a friendly example: among the 8 states we can reach, the gap never drops below about 0.98. Lucky us.</p>
+</li>
+<li>
+<p>Not every problem is that friendly. Take a needle in a haystack: a single marked bitstring with energy $-1$, everything else at energy $0$. Then the smallest gap shrinks quickly with $n$:</p>
+</li>
+</ol>
+<pre><code> n            4       6       8       10      12      14      16
+ min gap      0.348   0.182   0.096   0.050   0.026   0.014   0.007
+ 2^(-n/2)     0.250   0.125   0.063   0.031   0.016   0.008   0.004
+</code></pre>
+<p>The gap roughly halves with every two extra qubits, just like $2^{-n/2}$. So slow becomes exponentially slow. If you are clever and only crawl where the gap is small, you get a running time of order $\sqrt{2^n}$, which is exactly Grover's speedup (Roland and Cerf showed this for search), and nothing better. There is no free lunch, but sometimes there is a cheaper lunch.</p>
+<ol start="4">
+<li>For hard MaxCut instances the gap can also become tiny, and in general nobody knows in advance how small it will get.</li>
+</ol>
+<p>Ok, let us say we know how slowly we have to go. There is still a practical problem: a gate-based quantum computer cannot just turn a knob on a Hamiltonian. It only applies gates. So how do we turn this slow slide into a circuit?</p>
+<h2>From a slow slide to a circuit</h2>
+<ol>
+<li>For a fixed Hamiltonian $H$, the Schrödinger equation tells us that after time $t$ the state is $e^{-iHt}\ket{\psi}$. The matrix $e^{-iHt}$ is unitary, so it is a valid quantum operation. Our Hamiltonian changes with time, so we chop the total time $T$ into $p$ short pieces of length $\delta = T/p$ and keep $s$ fixed within each piece, at the values $s_1 &lt; s_2 &lt; \dots &lt; s_p$:</li>
+</ol>
+<p>$$
+\ket{\psi_T} \approx e^{-i\delta H(s_p)} \cdots e^{-i\delta H(s_2)}\, e^{-i\delta H(s_1)}\, \ket{+}^{\otimes n} .
+$$</p>
+<ol start="2">
+<li>Each piece still contains the sum $H(s) = (1-s)H_B + sH_C$, and here is a small annoyance: for matrices, $e^{P+Q} = e^P e^Q$ only holds if $PQ = QP$. Ours do not commute, already for one qubit $XZ = -ZX$. But for a short piece the error of splitting is small (of order $\delta^2$):</li>
+</ol>
+<p>$$
+e^{-i\delta\,(P + Q)} \approx e^{-i\delta P}\, e^{-i\delta Q} .
+$$</p>
+<p>This is the <strong>Trotter</strong> trick. So every piece becomes two steps: first a little bit of $H_C$, then a little bit of $H_B$.</p>
+<ol start="3">
+<li>And both steps are easy circuits.</li>
+</ol>
+<p>a) $e^{-i\gamma H_C} = e^{i\gamma C}$ is diagonal: it multiplies every $\ket{x}$ by the phase $e^{i\gamma C(x)}$. Since $C$ is a sum over edges, it splits into one two-qubit $ZZ$ rotation per edge, all with the same angle.</p>
+<p>b) $e^{-i\beta H_B} = e^{i\beta A}$ splits into one $X$ rotation per qubit, all with the same angle.</p>
+<ol start="4">
+<li>Writing $\gamma_k = \delta\, s_k$ and $\beta_k = \delta\,(1 - s_k)$, the whole slide becomes the circuit</li>
+</ol>
+<p>$$
+\ket{\gamma, \beta} = e^{-i\beta_p H_B}\, e^{-i\gamma_p H_C} \cdots e^{-i\beta_1 H_B}\, e^{-i\gamma_1 H_C}\, \ket{+}^{\otimes n}
+$$</p>
+<pre><code>          start    | piece 1               | piece 2               | ...
+ qubit 1  --H--    |-[      ]--[RX(b1)]--  |-[      ]--[RX(b2)]--  | ...
+ qubit 2  --H--    |-[ cost ]--[RX(b1)]--  |-[ cost ]--[RX(b2)]--  | ...
+   ...             |-[ (g1) ]--   ...   -- |-[ (g2) ]--   ...   -- | ...
+ qubit n  --H--    |-[      ]--[RX(b1)]--  |-[      ]--[RX(b2)]--  | ...
+
+  cost(g): a ZZ rotation on every edge, angle set by g
+  RX(b):   an X rotation on every qubit, angle set by b
+</code></pre>
+<p>with a schedule where $\gamma_k$ grows and $\beta_k$ shrinks as $s$ goes from 0 to 1. If you have seen QAOA before, this should look very familiar. If not, do not worry, we are about to get there. (Small print for comparing with the literature: Farhi et al. write $e^{-i\beta A} e^{-i\gamma C}$. That is our circuit with both angles negated, which only complex conjugates the state and changes no measurement probability.)</p>
+<ol start="5">
+<li>Does it work? On the prism, a fine slide with $p = 40$ pieces gives</li>
+</ol>
+<pre><code> total time T           2       5       10      20      40
+ P(maximum cut)         0.35    0.65    0.89    0.97    0.994
+</code></pre>
+<p>So yes: slow enough really works. But 40 layers for 6 vertices is a lot of gates. My laptop checks all 64 bitstrings before I finish reading this sentence. Real quantum hardware is noisy, and every layer costs us. Can we get away with fewer?</p>
+<h2>QAOA: stop being slow, start being clever</h2>
+<ol>
+<li>Here is the idea of QAOA (Farhi, Goldstone, Gutmann 2014): keep exactly this circuit shape, but forget about the slow slide. Treat the $2p$ angles $\gamma_1, \beta_1, \dots, \gamma_p, \beta_p$ as free knobs and tune them to make the expected cut</li>
+</ol>
+<p>$$
+\langle C \rangle = \bra{\gamma, \beta}\, C\, \ket{\gamma, \beta}
+$$</p>
+<p>as large as possible. On a quantum computer we estimate $\langle C \rangle$ by running the circuit and measuring, and a classical optimizer turns the knobs.</p>
+<ol start="2">
+<li>Why could this beat the slow slide? Because we do not need to stay in the ground state the whole way. We only need to end up there. A clever schedule can leave the ground state and come back, like cutting through a park instead of following the road. Optimal control theory even tells us what the best schedule for a fixed total time looks like: hard switches between $H_C$ and $H_B$ at the beginning and at the end (called &quot;bang-bang&quot;, exactly the alternating shape of QAOA), and possibly a smooth slide in the middle (Yang et al. 2017, Brady et al. 2021). So alternating the two matrices is not a crude approximation. It is close to what the best schedules do anyway.</li>
+</ol>
+<p>The adiabatic theorem says: walk slowly and you will arrive. QAOA says: I do not care how I walk, as long as I arrive.</p>
+<ol start="3">
+<li>
+<p>At depth 1 you can see the difference directly. The slide has $s_1 = 1/2$ and therefore $\gamma_1 = \beta_1 = T/2$, so it can only walk along the diagonal of the $(\gamma, \beta)$ plane. QAOA can go anywhere in the plane, and its best point, $(\gamma, \beta) \approx (0.57, 0.35)$, is off the diagonal.</p>
+</li>
+<li>
+<p>Let us compare on the prism at the same number of layers $p$. On top the slide, where we only tune the total time $T$. Below QAOA, where we tune all angles:</p>
+</li>
+</ol>
+<pre><code> layers p                    1       2       3       4       6       8
+ slide, best T              0.35    0.40    0.51    0.75    0.89    0.92
+ QAOA, tuned angles         0.40    0.72    0.92    0.99    1.00    1.00
+                    (probability that a measurement gives a maximum cut)
+</code></pre>
+<p>With 4 tuned layers, QAOA almost always returns a maximum cut. The plain slide needs about 30 layers and a total time of about 30 for that. (For the slide I tried every $T$ for which the pieces stay smaller than $\pi/2$. Bigger pieces make the angles wrap around, and then the circuit has nothing to do with sliding anymore. QAOA's angles are tuned for the expected cut and the slide's $T$ for the probability itself, so if anything, this table is unfair to QAOA.)</p>
+<p>Why is the slide so bad with few layers? For a fixed $p$, a longer $T$ helps at first, because we go slower. But then it hurts, because the pieces get longer and the Trotter trick gets worse. With few layers you cannot be slow and careful at the same time. QAOA does not have this problem, because it does not even try to be slow.</p>
+<ol start="5">
+<li>And here is the part I find really cute. Look at the tuned angles for $p = 4$:</li>
+</ol>
+<pre><code> layer k         1       2       3       4
+ gamma_k         0.38    0.77    1.03    1.27     growing
+ beta_k          0.53    0.37    0.20    0.09     shrinking
+</code></pre>
+<p>That is a slide! $\gamma$ grows and $\beta$ shrinks, just like $s$ going from 0 to 1. So QAOA rediscovers the slide on its own, just with fewer, bigger and better placed steps.</p>
+<p>Small print 1: these are the angles you get if you grow the circuit one layer at a time and start each new optimization from a stretched version of the previous angles. This is the trick of Zhou et al., who saw the same slide-like pattern on many graphs. Random restarts find messier angles that are a tiny bit better (0.996 instead of 0.989 at $p = 4$). So the slide is not the only good path, but it is a very good one, and it is the one you find without luck.</p>
+<p>Small print 2: $\beta$ only matters up to multiples of $\pi/2$ here. Adding $\pi/2$ to $\beta$ flips all bits, and our symmetric state does not care.</p>
+<p>Again, you can play with it. Choose the number of layers $p$ and the total time $T$ of the slide, and compare the slide with QAOA's tuned angles. The button jumps to the best $T$ for the current $p$. Fun fact on the side: at short times the chopped slide can even beat the fine one (at $p = 4$ and $T \approx 4.6$, compare the teal and the gray curve). Being sloppy about the slide is not always bad, and that is the first hint at what QAOA does.</p>
+<div class="toy" id="toyWalk">
+  <div class="toy-head"><span><strong>Toy 2.</strong> Walk slowly, or walk cleverly</span></div>
+  <div class="controls">
+    <div class="slider"><label for="wkP">p</label><input type="range" id="wkP" min="1" max="8" value="4"><output id="wkPOut" for="wkP"></output></div>
+    <div class="slider"><label for="wkT">T</label><input type="range" id="wkT" min="0" max="400" value="93"><output id="wkTOut" for="wkT"></output></div>
+    <button type="button" class="btn" id="wkBest">Best T</button>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k">Slide: P(maximum cut)</span><span class="val" id="wkSlideP"></span></div>
+    <div class="ro"><span class="k">Slide: expected cut</span><span class="val" id="wkSlideE"></span></div>
+    <div class="ro"><span class="k">QAOA, tuned: P(maximum cut)</span><span class="val" id="wkQaoaP"></span></div>
+    <div class="ro"><span class="k">QAOA, tuned: expected cut</span><span class="val" id="wkQaoaE"></span></div>
+    <div class="ro"><span class="k">Fine slide (p = 40) at this T</span><span class="val" id="wkFineP"></span></div>
+  </div>
+  <div class="two">
+    <div>
+      <div class="panel-label">Angles per layer</div>
+      <svg class="plot" id="wkAngles" viewBox="0 0 300 204" role="img" aria-label="Angles gamma and beta for every layer: bars for the slide, dark ticks for the tuned QAOA angles"></svg>
+      <p class="caption">Bars: the slide, teal for the cost angle γ and plum for the mixer angle β. Dark ticks: QAOA's tuned angles.</p>
+    </div>
+    <div>
+      <div class="panel-label">P(maximum cut) against T</div>
+      <svg class="plot" id="wkCurve" viewBox="0 0 300 204" role="img" aria-label="Probability of a maximum cut against the total time T for the slide with p layers, a fine slide with 40 layers, and QAOA with tuned angles"></svg>
+      <p class="caption">Teal: the slide with p layers, faint where its pieces get longer than π/2. Gray: a fine slide with 40 layers. Dashed blue: QAOA with p tuned layers. Dotted: random guessing.</p>
+    </div>
+  </div>
+</div>
+<p>So is QAOA just a slide with better angles? Not quite, and the difference is where things get interesting.</p>
+<h2>What this picture tells us, and what it does not</h2>
+<ol>
+<li>
+<p>It explains a lot: why the circuit alternates two kinds of layers (a chopped-up slide), why it starts with Hadamards (the ground state of $H_B$), and why good angles look like a ramp. It also gives a cheap default. If you do not know which angles to use, a smooth ramp is a decent first guess.</p>
+</li>
+<li>
+<p>It tells us how to build QAOA for other problems. We need an easy matrix that only walks between valid solutions, and a start state that is its ground state. For constrained problems like independent sets, this leads to other mixers than $A$ (Hadfield et al.).</p>
+</li>
+<li>
+<p>It tells us where to expect trouble. If the slide has to squeeze through a tiny gap, the slow version needs a very long time. QAOA might find a shortcut, but nothing guarantees it, and for a needle in a haystack nothing beats Grover's square root.</p>
+</li>
+<li>
+<p>It does not explain small depth very well. At $p = 1$ or $2$, QAOA is far away from anything slow. There it behaves more like a cleverly tuned interference experiment: the cost layer writes the cut values into phases, the mixer lets nearby bitstrings interfere, and the angles decide where the interference is constructive.</p>
+</li>
+<li>
+<p>There is also a classical cousin. Replace the rotations by damping, $e^{-i\beta H_B} \to e^{-tH_B}$ and $e^{-i\gamma H_C} \to e^{-\gamma H_C}$, and the two layers become mutation and selection of a genetic algorithm, acting on probabilities instead of amplitudes (more on that in GeneticAlgorithmsOnTheHammingCube). The classical version gets to good cuts by damping everything it does not want. The quantum version cannot damp anything, it can only rotate phases. So whatever advantage QAOA has must come from interference.</p>
+</li>
+<li>
+<p>And to be honest: none of this shows that QAOA beats good classical algorithms for MaxCut. It shows what QAOA is trying to do, and that is already a lot more than a list of gates.</p>
+</li>
+</ol>
+<h2>The dictionary</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Object</th>
+<th>In the slow slide</th>
+<th>In QAOA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cut values $C$, problem Hamiltonian $H_C = -C$</td>
+<td>where we want to end up: its ground states are the maximum cuts</td>
+<td>cost layer $e^{-i\gamma H_C}$, one $ZZ$ rotation per edge</td>
+</tr>
+<tr>
+<td>Cube adjacency $A = \sum_i X_i$, easy Hamiltonian $H_B = -A$</td>
+<td>where we start: its ground state is $\ket{+}^{\otimes n}$</td>
+<td>mixer layer $e^{-i\beta H_B}$, one $X$ rotation per qubit</td>
+</tr>
+<tr>
+<td>Start state $\ket{+}^{\otimes n}$</td>
+<td>ground state of $H_B$</td>
+<td>a Hadamard on every qubit</td>
+</tr>
+<tr>
+<td>Slide parameter $s$</td>
+<td>goes slowly from 0 to 1</td>
+<td>becomes the angle schedule: $\gamma_k$ grows, $\beta_k$ shrinks</td>
+</tr>
+<tr>
+<td>Gap</td>
+<td>sets how slowly we have to go</td>
+<td>no strict role, but small gaps make shortcuts hard</td>
+</tr>
+<tr>
+<td>Total time $T$ and pieces $p$</td>
+<td>how slowly we go, and how finely we chop</td>
+<td>the size of the angles, and the depth</td>
+</tr>
+<tr>
+<td>Success</td>
+<td>slow enough means we end in the ground state</td>
+<td>tuned angles give the best expected cut at a fixed depth</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Literature</h2>
+<p>The algorithms:</p>
+<ul>
+<li>E. Farhi, J. Goldstone, S. Gutmann, M. Sipser, <a href="https://arxiv.org/abs/quant-ph/0001106">Quantum Computation by Adiabatic Evolution</a> (2000). The slow slide as an algorithm.</li>
+<li>E. Farhi, J. Goldstone, S. Gutmann, <a href="https://arxiv.org/abs/1411.4028">A Quantum Approximate Optimization Algorithm</a> (2014). The original QAOA paper, with the transverse-field mixer and the alternating ansatz.</li>
+<li>S. Hadfield et al., <a href="https://arxiv.org/abs/1709.03489">From the QAOA to a Quantum Alternating Operator Ansatz</a> (2017). Other mixers for constrained problems, where the walk only connects valid solutions.</li>
+</ul>
+<p>The slow slide and its gap:</p>
+<ul>
+<li>T. Albash, D. A. Lidar, <a href="https://arxiv.org/abs/1611.04471">Adiabatic quantum computation</a>, Rev. Mod. Phys. 90, 015002 (2018). A long and friendly review of everything about the slow slide, including the gap.</li>
+<li>J. Roland, N. J. Cerf, <a href="https://arxiv.org/abs/quant-ph/0107015">Quantum search by local adiabatic evolution</a>, Phys. Rev. A 65, 042308 (2002). Crawling only near the small gap gives Grover's square root for the needle.</li>
+</ul>
+<p>Schedules and angles:</p>
+<ul>
+<li>Z.-C. Yang, A. Rahmani, A. Shabani, H. Neven, C. Chamon, <a href="https://arxiv.org/abs/1607.06473">Optimizing Variational Quantum Algorithms Using Pontryagin's Minimum Principle</a>, Phys. Rev. X 7, 021027 (2017). For a fixed total time, the best schedules switch hard between the two Hamiltonians.</li>
+<li>L. T. Brady, C. L. Baldwin, A. Bapat, Y. Kharkov, A. V. Gorshkov, <a href="https://arxiv.org/abs/2003.08952">Optimal Protocols in Quantum Annealing and Quantum Approximate Optimization Algorithm Problems</a>, Phys. Rev. Lett. 126, 070505 (2021). The refinement: hard switches at the beginning and at the end, often with a smooth slide in between.</li>
+<li>L. Zhou, S.-T. Wang, S. Choi, H. Pichler, M. D. Lukin, <a href="https://arxiv.org/abs/1812.01041">Quantum Approximate Optimization Algorithm: Performance, Mechanism, and Implementation on Near-Term Devices</a> (2018). Tuned QAOA angles look like a slide, and how to use that to guess good angles for deeper circuits.</li>
+</ul>
+<p>All numbers for the prism and the needle come from my own small simulation (exact state vectors, nothing fancy), so if something looks off, it is probably my fault and not the physics.</p>
+
+<footer>
+  <div class="dashes" aria-hidden="true">----------------------------------------------------------------------------------------------------</div>
+  <p>Author: Lukas Theißinger (Human)<br>Google scholar: <a href="https://scholar.google.com/citations?user=aD3-DrQAAAAJ&amp;hl=de">https://scholar.google.com/citations?user=aD3-DrQAAAAJ&amp;hl=de</a></p>
+</footer>
+</main>
+
+<script>
+
+(() => {
+  const bitstr = (x, n) => { let s = ''; for (let i = 0; i < n; i++) s += (x >> i) & 1; return s; };
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const txt = (parent, x, y, s, cls, anchor) => {
+    const t = el('text', { x, y, class: cls || 'lbl', 'text-anchor': anchor || 'middle' }, parent);
+    t.textContent = s;
+    return t;
+  };
+
+  /* ---------- MaxCut assignments and their values on Q_3 ---------- */
+  (function buildMaxCutCube() {
+    // As elsewhere in the tutorial, bit i is vertex i + 1 and strings read x_1 x_2 x_3.
+    const problemSvg = document.getElementById('cutProblemSvg');
+    const searchSvg = document.getElementById('cutCubeSvg');
+    const edgeOptions = [
+      { pair: [0, 1], input: document.getElementById('cutEdge12') },
+      { pair: [1, 2], input: document.getElementById('cutEdge23') },
+      { pair: [0, 2], input: document.getElementById('cutEdge13') }
+    ];
+    let selected = 2; // 010: the middle vertex is on side 1.
+    const problemPos = [[38, 166], [120, 46], [202, 166]];
+    const searchPos = (x) => [60 + 190 * (x & 1) + 95 * ((x >> 2) & 1), 250 - 135 * ((x >> 1) & 1) - 70 * ((x >> 2) & 1)];
+    const side = (x, i) => (x >> i) & 1;
+    const signed = (v) => v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0';
+    const activate = (node, action) => {
+      node.addEventListener('click', action);
+      node.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); action(); }
+      });
+    };
+    // Keep controls in the DOM when redrawing, so keyboard focus survives a bit flip.
+    const problemEdges = edgeOptions.map(({ pair: [i, j] }) => {
+      const [x1, y1] = problemPos[i], [x2, y2] = problemPos[j];
+      const line = el('line', { x1, y1, x2, y2 }, problemSvg);
+      const label = txt(problemSvg, (x1 + x2) / 2 + (i === 0 && j === 1 ? -13 : i === 1 ? 13 : 0), (y1 + y2) / 2 + (j - i === 2 ? 24 : 0), '', 'cut-edge-label');
+      return { line, label };
+    });
+    const problemNodes = problemPos.map(([cx, cy], i) => {
+      const node = el('g', { class: 'cut-node', tabindex: 0, role: 'button', 'data-vertex': i + 1 }, problemSvg);
+      el('circle', { cx, cy, r: 27, class: 'cut-focus' }, node);
+      const disk = el('circle', { cx, cy, r: 21 }, node);
+      const label = txt(node, cx, cy + 5, String(i + 1), 'gvl');
+      label.setAttribute('style', 'font-size: 15px');
+      const bitLabel = txt(node, cx, cy + 42, '', 'cut-bitlabel');
+      activate(node, () => { selected ^= 1 << i; render(); });
+      return { node, disk, bitLabel };
+    });
+    const searchEdges = [];
+    for (let x = 0; x < 8; x++) for (let i = 0; i < 3; i++) {
+      const y = x ^ (1 << i);
+      if (x < y) {
+        const [x1, y1] = searchPos(x), [x2, y2] = searchPos(y);
+        searchEdges.push({ x, y, line: el('line', { x1, y1, x2, y2, 'data-from': bitstr(x, 3), 'data-to': bitstr(y, 3) }, searchSvg) });
+      }
+    }
+    const selection = el('circle', { r: 27, class: 'cut-selection' }, searchSvg);
+    const searchNodes = [];
+    // Lexicographic tab order, independent of the integer representation of the bits.
+    const order = Array.from({ length: 8 }, (_, x) => x).sort((a, b) => bitstr(a, 3).localeCompare(bitstr(b, 3)));
+    for (const x of order) {
+      const [cx, cy] = searchPos(x);
+      const node = el('g', { class: 'cut-node', tabindex: 0, role: 'button', 'data-assignment': bitstr(x, 3) }, searchSvg);
+      el('circle', { cx, cy, r: 32, class: 'cut-focus' }, node);
+      const disk = el('circle', { cx, cy, r: 21 }, node);
+      const value = txt(node, cx, cy + 5, '', 'cut-score');
+      txt(node, cx, cy - 34, bitstr(x, 3), 'cut-bitlabel');
+      activate(node, () => { selected = x; render(); });
+      searchNodes[x] = { node, disk, value };
+    }
+    const flipButtons = Array.from({ length: 3 }, (_, i) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = 'btn';
+      button.appendChild(document.createTextNode(`Flip x${'₁₂₃'[i]} · vertex ${i + 1}`));
+      const detail = document.createElement('span'); button.appendChild(detail);
+      button.addEventListener('click', () => { selected ^= 1 << i; render(); });
+      document.getElementById('cutFlips').appendChild(button);
+      return { button, detail };
+    });
+    function render() {
+      const active = edgeOptions.filter(({ input }) => input.checked).map(({ pair }) => pair);
+      const costs = Array.from({ length: 8 }, (_, x) => active.reduce((sum, [i, j]) => sum + (side(x, i) !== side(x, j) ? 1 : 0), 0));
+      const maximum = Math.max(...costs);
+      const optimal = order.filter((x) => costs[x] === maximum);
+      edgeOptions.forEach(({ pair: [i, j], input }, k) => {
+        const cut = side(selected, i) !== side(selected, j);
+        const { line, label } = problemEdges[k];
+        line.setAttribute('visibility', input.checked ? 'visible' : 'hidden');
+        line.setAttribute('class', 'gedge cut-graph-edge' + (cut ? ' cut' : ''));
+        label.textContent = input.checked ? (cut ? '1' : '0') : '';
+      });
+      problemNodes.forEach(({ node, disk, bitLabel }, i) => {
+        const bit = side(selected, i);
+        disk.setAttribute('class', bit ? 'gv1' : 'gv0');
+        bitLabel.textContent = `x${'₁₂₃'[i]} = ${bit}`;
+        node.setAttribute('aria-label', `Vertex ${i + 1}, side ${bit}. Flip bit ${i + 1}.`);
+      });
+      searchEdges.forEach(({ x, y, line }) => line.setAttribute('class', 'edge' + (x === selected || y === selected ? ' cut-neighbor-edge' : '')));
+      const [cx, cy] = searchPos(selected);
+      selection.setAttribute('cx', cx); selection.setAttribute('cy', cy);
+      searchNodes.forEach(({ node, disk, value }, x) => {
+        disk.setAttribute('class', `cut-disk cut-value-${costs[x]}`);
+        value.setAttribute('class', `cut-score cut-score-${costs[x]}`);
+        value.textContent = costs[x];
+        node.setAttribute('aria-label', `Assignment ${bitstr(x, 3)}, cut size ${costs[x]}${costs[x] === maximum ? ', maximum cut' : ''}`);
+        node.setAttribute('aria-pressed', String(x === selected));
+      });
+      const bits = bitstr(selected, 3);
+      document.getElementById('cutSelected').textContent = `x = ${bits} → C(x) = ${costs[selected]} of ${active.length} edges cut`;
+      const partition = (bit) => {
+        const vertices = [0, 1, 2].filter((i) => side(selected, i) === bit).map((i) => i + 1);
+        return vertices.length ? `{${vertices.join(', ')}}` : '∅';
+      };
+      document.getElementById('cutPartitions').textContent = `Side 0: ${partition(0)} · Side 1: ${partition(1)}`;
+      const terms = active.map(([i, j]) => `[${side(selected, i)} ≠ ${side(selected, j)}]`);
+      const values = active.map(([i, j]) => side(selected, i) !== side(selected, j) ? 1 : 0);
+      document.getElementById('cutEquation').textContent = active.length
+        ? `C(${bits}) = ${terms.join(' + ')} = ${values.join(' + ')} = ${costs[selected]}`
+        : `C(${bits}) = 0 (there are no problem edges)`;
+      document.getElementById('cutOptima').textContent = optimal.length === 8
+        ? 'Maximum cut: 0. All eight assignments are optimal.'
+        : `Maximum cut: ${maximum}. Attained at ${optimal.map((x) => bitstr(x, 3)).join(', ')}.`;
+      flipButtons.forEach(({ button, detail }, i) => {
+        const neighbor = selected ^ (1 << i);
+        detail.textContent = `→ ${bitstr(neighbor, 3)} · C = ${costs[neighbor]} · ΔC = ${signed(costs[neighbor] - costs[selected])}`;
+        button.setAttribute('aria-label', `Flip bit ${i + 1}: assignment ${bitstr(neighbor, 3)}, cut size ${costs[neighbor]}, change ${signed(costs[neighbor] - costs[selected])}`);
+      });
+    }
+    edgeOptions.forEach(({ input }) => input.addEventListener('change', render));
+    document.getElementById('cutComplement').addEventListener('click', () => { selected ^= 7; render(); });
+    document.getElementById('cutReset').addEventListener('click', () => {
+      selected = 2; edgeOptions.forEach(({ input }, k) => { input.checked = k < 2; }); render();
+    });
+    render();
+    document.getElementById('maxcut-cube').hidden = false;
+    document.getElementById('cutFallback').hidden = true;
+  })();
+
+  /* ---------- data: the slide on the prism (exact diagonalization) and tuned QAOA angles ---------- */
+  const SLIDE = {"s":[0.0,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.2,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29,0.3,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.4,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.5,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.6,0.61,0.62,0.63,0.64,0.65,0.66,0.67,0.68,0.69,0.7,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.8,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.9,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,1.0],"levels":[[-6.0,-2.0,-2.0,-2.0,2.0,2.0,2.0,6.0],[-5.9851,-2.0367,-2.0181,-2.0002,1.9233,1.9419,1.9599,5.8951],[-5.9702,-2.0734,-2.0362,-2.0006,1.8466,1.8838,1.9198,5.7902],[-5.9555,-2.1101,-2.0544,-2.0011,1.7699,1.8257,1.8799,5.6855],[-5.9409,-2.1468,-2.0725,-2.0016,1.6932,1.7676,1.8401,5.5809],[-5.9265,-2.1834,-2.0907,-2.0024,1.6165,1.7096,1.8004,5.4765],[-5.9121,-2.2201,-2.1089,-2.0032,1.5397,1.6515,1.7608,5.3722],[-5.8979,-2.2567,-2.1271,-2.0042,1.463,1.5935,1.7214,5.268],[-5.8839,-2.2934,-2.1453,-2.0053,1.3863,1.5355,1.682,5.164],[-5.8699,-2.33,-2.1635,-2.0066,1.3096,1.4775,1.6428,5.0601],[-5.8561,-2.3666,-2.1817,-2.008,1.2329,1.4195,1.6037,4.9564],[-5.8425,-2.4032,-2.2,-2.0096,1.1562,1.3615,1.5647,4.8528],[-5.829,-2.4398,-2.2183,-2.0113,1.0795,1.3036,1.5259,4.7494],[-5.8157,-2.4764,-2.2366,-2.0133,1.0028,1.2456,1.4871,4.6462],[-5.8025,-2.5129,-2.2549,-2.0154,0.9262,1.1877,1.4485,4.5432],[-5.7895,-2.5494,-2.2732,-2.0177,0.8495,1.1298,1.4101,4.4404],[-5.7767,-2.5859,-2.2915,-2.0202,0.7729,1.0719,1.3717,4.3378],[-5.764,-2.6224,-2.3099,-2.0229,0.6963,1.014,1.3335,4.2354],[-5.7516,-2.6588,-2.3283,-2.0259,0.6197,0.9562,1.2954,4.1332],[-5.7393,-2.6952,-2.3467,-2.029,0.5431,0.8983,1.2574,4.0313],[-5.7272,-2.7316,-2.3651,-2.0324,0.4666,0.8405,1.2196,3.9296],[-5.7153,-2.7679,-2.3836,-2.0361,0.3901,0.7827,1.1818,3.8282],[-5.7036,-2.8042,-2.4021,-2.04,0.3137,0.725,1.1442,3.7271],[-5.6921,-2.8404,-2.4206,-2.0442,0.2373,0.6672,1.1067,3.6262],[-5.6809,-2.8766,-2.4392,-2.0487,0.1609,0.6095,1.0693,3.5257],[-5.6699,-2.9127,-2.4578,-2.0535,0.0846,0.5518,1.032,3.4255],[-5.6591,-2.9488,-2.4764,-2.0587,0.0084,0.4941,0.9948,3.3256],[-5.6486,-2.9849,-2.495,-2.0641,-0.0677,0.4365,0.9577,3.2261],[-5.6384,-3.0208,-2.5137,-2.07,-0.1437,0.3789,0.9207,3.127],[-5.6284,-3.0567,-2.5325,-2.0762,-0.2197,0.3213,0.8837,3.0284],[-5.6187,-3.0926,-2.5513,-2.0828,-0.2955,0.2638,0.8468,2.9302],[-5.6092,-3.1283,-2.5701,-2.0898,-0.3712,0.2063,0.8099,2.8324],[-5.6001,-3.164,-2.589,-2.0972,-0.4467,0.1488,0.773,2.7352],[-5.5913,-3.1996,-2.6079,-2.1052,-0.5221,0.0914,0.7361,2.6386],[-5.5829,-3.2351,-2.6269,-2.1136,-0.5973,0.034,0.6992,2.5426],[-5.5747,-3.2705,-2.646,-2.1226,-0.6722,-0.0234,0.6622,2.4472],[-5.567,-3.3058,-2.6651,-2.1321,-0.7469,-0.0807,0.6251,2.3525],[-5.5596,-3.3409,-2.6844,-2.1423,-0.8213,-0.1379,0.5878,2.2586],[-5.5526,-3.376,-2.7037,-2.1531,-0.8954,-0.1951,0.5503,2.1656],[-5.546,-3.4109,-2.7231,-2.1646,-0.9691,-0.2522,0.5125,2.0734],[-5.5398,-3.4457,-2.7426,-2.177,-1.0424,-0.3093,0.4745,1.9823],[-5.5341,-3.4803,-2.7623,-2.1901,-1.1151,-0.3663,0.436,1.8922],[-5.5288,-3.5148,-2.782,-2.2042,-1.1873,-0.4232,0.397,1.8034],[-5.524,-3.5491,-2.8019,-2.2192,-1.2589,-0.4801,0.3574,1.7159],[-5.5198,-3.5833,-2.822,-2.2354,-1.3296,-0.5368,0.3171,1.6298],[-5.516,-3.6173,-2.8423,-2.2528,-1.3994,-0.5935,0.2761,1.5453],[-5.5128,-3.6511,-2.8628,-2.2716,-1.4682,-0.6501,0.234,1.4626],[-5.5102,-3.6846,-2.8835,-2.2919,-1.5358,-0.7066,0.1909,1.3818],[-5.5083,-3.718,-2.9045,-2.3139,-1.602,-0.7629,0.1465,1.303],[-5.5069,-3.7512,-2.9258,-2.3377,-1.6665,-0.8191,0.1007,1.2266],[-5.5062,-3.7841,-2.9474,-2.3637,-1.7292,-0.8752,0.0533,1.1526],[-5.5063,-3.8168,-2.9695,-2.3919,-1.7898,-0.9311,0.0042,1.0812],[-5.507,-3.8493,-2.9921,-2.4226,-1.848,-0.9869,-0.0467,1.0126],[-5.5085,-3.8815,-3.0153,-2.456,-1.9036,-1.0424,-0.0996,0.9469],[-5.5109,-3.9134,-3.0391,-2.492,-1.9566,-1.0978,-0.1546,0.8843],[-5.514,-3.9451,-3.0637,-2.5306,-2.0067,-1.1529,-0.2117,0.8248],[-5.5181,-3.9765,-3.0893,-2.5718,-2.0541,-1.2078,-0.271,0.7685],[-5.523,-4.0077,-3.116,-2.6151,-2.0988,-1.2624,-0.3324,0.7154],[-5.5289,-4.0386,-3.1441,-2.6602,-2.1412,-1.3167,-0.3958,0.6654],[-5.5357,-4.0693,-3.1738,-2.7064,-2.1815,-1.3706,-0.4611,0.6184],[-5.5436,-4.0998,-3.2054,-2.7532,-2.22,-1.4242,-0.5282,0.5744],[-5.5525,-4.1301,-3.2391,-2.8,-2.2572,-1.4774,-0.597,0.5332],[-5.5626,-4.1602,-3.2752,-2.846,-2.2934,-1.5301,-0.6672,0.4946],[-5.5737,-4.1901,-3.3141,-2.8908,-2.3289,-1.5823,-0.7386,0.4585],[-5.586,-4.22,-3.3558,-2.9338,-2.3641,-1.6339,-0.8111,0.4247],[-5.5995,-4.2499,-3.4004,-2.9747,-2.3992,-1.6849,-0.8845,0.3931],[-5.6142,-4.2799,-3.4479,-3.0133,-2.4345,-1.7353,-0.9585,0.3636],[-5.6302,-4.31,-3.4978,-3.0497,-2.4701,-1.785,-1.0331,0.3359],[-5.6475,-4.3404,-3.55,-3.0839,-2.5063,-1.8339,-1.108,0.31],[-5.666,-4.3712,-3.604,-3.1162,-2.5432,-1.8819,-1.1831,0.2856],[-5.6859,-4.4025,-3.6593,-3.1467,-2.581,-1.9291,-1.2582,0.2629],[-5.7072,-4.4346,-3.7155,-3.1758,-2.6198,-1.9754,-1.3332,0.2415],[-5.7298,-4.4677,-3.772,-3.2037,-2.6597,-2.0207,-1.4079,0.2214],[-5.7538,-4.5019,-3.8285,-3.2306,-2.7007,-2.065,-1.4823,0.2026],[-5.7792,-4.5375,-3.8844,-3.2566,-2.7428,-2.1084,-1.5561,0.185],[-5.806,-4.5747,-3.9394,-3.282,-2.7862,-2.1507,-1.6294,0.1685],[-5.8343,-4.6139,-3.9931,-3.3069,-2.8308,-2.1921,-1.702,0.153],[-5.864,-4.6551,-4.0452,-3.3314,-2.8766,-2.2325,-1.7737,0.1385],[-5.8952,-4.6986,-4.0955,-3.3557,-2.9234,-2.2719,-1.8446,0.125],[-5.9278,-4.7446,-4.1438,-3.3798,-2.9714,-2.3105,-1.9144,0.1123],[-5.962,-4.793,-4.19,-3.4039,-3.0203,-2.3482,-1.9831,0.1005],[-5.9977,-4.8438,-4.2342,-3.428,-3.0702,-2.3851,-2.0506,0.0895],[-6.0349,-4.8969,-4.2765,-3.4522,-3.1208,-2.4213,-2.1168,0.0793],[-6.0737,-4.9521,-4.317,-3.4766,-3.172,-2.4568,-2.1816,0.0698],[-6.1141,-5.0092,-4.356,-3.5013,-3.2238,-2.4917,-2.245,0.0611],[-6.1561,-5.068,-4.3938,-3.5264,-3.2759,-2.526,-2.3068,0.0531],[-6.1998,-5.1282,-4.4307,-3.5519,-3.3282,-2.5598,-2.367,0.0457],[-6.2452,-5.1894,-4.467,-3.5779,-3.3807,-2.5932,-2.4255,0.0389],[-6.2923,-5.2516,-4.5031,-3.6045,-3.433,-2.6261,-2.4822,0.0328],[-6.3411,-5.3143,-4.5392,-3.6319,-3.485,-2.6587,-2.537,0.0272],[-6.3917,-5.3775,-4.5756,-3.66,-3.5367,-2.6909,-2.5898,0.0222],[-6.4442,-5.4408,-4.6125,-3.6891,-3.5877,-2.7228,-2.6407,0.0178],[-6.4984,-5.5043,-4.6503,-3.719,-3.638,-2.7545,-2.6894,0.0139],[-6.5546,-5.5676,-4.689,-3.75,-3.6874,-2.7859,-2.736,0.0105],[-6.6126,-5.6306,-4.729,-3.7821,-3.7358,-2.817,-2.7804,0.0077],[-6.6725,-5.6934,-4.7703,-3.8154,-3.7831,-2.848,-2.8226,0.0053],[-6.7343,-5.7557,-4.813,-3.8498,-3.8292,-2.8787,-2.8625,0.0033],[-6.798,-5.8176,-4.8573,-3.8855,-3.8739,-2.9093,-2.9002,0.0019],[-6.8635,-5.8789,-4.9032,-3.9224,-3.9173,-2.9397,-2.9357,0.0008],[-6.9309,-5.9397,-4.9508,-3.9606,-3.9593,-2.9699,-2.9689,0.0002],[-7.0,-6.0,-5.0,-4.0,-4.0,-3.0,-3.0,0.0]],"dists":[[0.0313,0.0,0.0,0.2187,0.2813,0.1875,0.1875,0.0937],[0.0305,0.0,0.0,0.2171,0.2805,0.188,0.1889,0.0949],[0.0299,0.0,0.0,0.2154,0.2798,0.1884,0.1904,0.0962],[0.0292,0.0,0.0,0.2137,0.279,0.1889,0.1919,0.0974],[0.0285,0.0,0.0,0.212,0.2782,0.1893,0.1934,0.0987],[0.0278,0.0,0.0,0.2102,0.2773,0.1897,0.1949,0.1001],[0.0271,0.0,0.0,0.2084,0.2764,0.1902,0.1965,0.1014],[0.0264,0.0,0.0,0.2066,0.2754,0.1906,0.1981,0.1029],[0.0257,0.0,0.0,0.2047,0.2744,0.191,0.1998,0.1043],[0.0251,0.0,0.0,0.2028,0.2734,0.1913,0.2015,0.1059],[0.0244,0.0,0.0,0.2009,0.2723,0.1917,0.2033,0.1074],[0.0238,0.0,0.0,0.1989,0.2711,0.192,0.205,0.1091],[0.0231,0.0,0.0,0.197,0.27,0.1924,0.2069,0.1107],[0.0225,0.0,0.0,0.1949,0.2687,0.1927,0.2087,0.1125],[0.0218,0.0,0.0,0.1929,0.2674,0.193,0.2107,0.1143],[0.0212,0.0,0.0,0.1908,0.2661,0.1932,0.2126,0.1161],[0.0206,0.0,0.0,0.1886,0.2646,0.1935,0.2146,0.1181],[0.0199,0.0,0.0,0.1865,0.2632,0.1937,0.2167,0.1201],[0.0193,0.0,0.0,0.1843,0.2616,0.1939,0.2188,0.1221],[0.0187,0.0,0.0,0.182,0.26,0.194,0.221,0.1243],[0.0181,0.0,0.0,0.1797,0.2583,0.1941,0.2232,0.1265],[0.0175,0.0,0.0,0.1774,0.2566,0.1942,0.2255,0.1288],[0.0169,0.0,0.0,0.175,0.2547,0.1943,0.2278,0.1312],[0.0163,0.0,0.0,0.1726,0.2528,0.1943,0.2302,0.1337],[0.0157,0.0,0.0,0.1702,0.2508,0.1942,0.2326,0.1363],[0.0152,0.0,0.0,0.1677,0.2488,0.1942,0.2352,0.1391],[0.0146,0.0,0.0,0.1652,0.2466,0.194,0.2377,0.1419],[0.014,0.0,0.0,0.1626,0.2444,0.1938,0.2404,0.1448],[0.0135,0.0,0.0,0.16,0.242,0.1936,0.2431,0.1479],[0.013,0.0,0.0,0.1573,0.2396,0.1933,0.2459,0.1511],[0.0124,0.0,0.0,0.1546,0.237,0.1929,0.2487,0.1544],[0.0119,0.0,0.0,0.1518,0.2344,0.1924,0.2516,0.1579],[0.0114,0.0,0.0,0.149,0.2316,0.1919,0.2546,0.1615],[0.0109,0.0,0.0,0.1461,0.2288,0.1913,0.2576,0.1653],[0.0104,0.0,0.0,0.1432,0.2258,0.1906,0.2608,0.1693],[0.0099,0.0,0.0,0.1402,0.2227,0.1898,0.264,0.1734],[0.0094,0.0,0.0,0.1372,0.2195,0.1889,0.2672,0.1777],[0.009,0.0,0.0,0.1342,0.2161,0.1879,0.2706,0.1823],[0.0085,0.0,0.0,0.1311,0.2127,0.1868,0.274,0.1871],[0.0081,0.0,0.0,0.1279,0.2091,0.1855,0.2774,0.192],[0.0076,0.0,0.0,0.1247,0.2053,0.1841,0.2809,0.1973],[0.0072,0.0,0.0,0.1214,0.2015,0.1826,0.2845,0.2027],[0.0068,0.0,0.0,0.1181,0.1974,0.181,0.2882,0.2085],[0.0064,0.0,0.0,0.1148,0.1933,0.1792,0.2918,0.2145],[0.006,0.0,0.0,0.1114,0.189,0.1772,0.2956,0.2208],[0.0056,0.0,0.0,0.1079,0.1845,0.1751,0.2993,0.2275],[0.0053,0.0,0.0,0.1044,0.1799,0.1728,0.3031,0.2344],[0.0049,0.0,0.0,0.1009,0.1752,0.1703,0.3069,0.2417],[0.0046,0.0,0.0,0.0974,0.1703,0.1676,0.3107,0.2494],[0.0043,0.0,0.0,0.0938,0.1653,0.1648,0.3144,0.2574],[0.0039,0.0,0.0,0.0902,0.1602,0.1617,0.3181,0.2659],[0.0036,0.0,0.0,0.0865,0.1549,0.1584,0.3218,0.2747],[0.0033,0.0,0.0,0.0828,0.1495,0.1549,0.3254,0.284],[0.0031,0.0,0.0,0.0792,0.144,0.1512,0.3288,0.2937],[0.0028,0.0,0.0,0.0755,0.1384,0.1472,0.3322,0.3039],[0.0026,0.0,0.0,0.0718,0.1327,0.1431,0.3353,0.3146],[0.0023,0.0,0.0,0.0681,0.1269,0.1387,0.3383,0.3257],[0.0021,0.0,0.0,0.0644,0.1211,0.1341,0.341,0.3373],[0.0019,0.0,0.0,0.0608,0.1152,0.1293,0.3434,0.3495],[0.0017,0.0,0.0,0.0572,0.1093,0.1243,0.3454,0.3621],[0.0015,0.0,0.0,0.0536,0.1033,0.1191,0.3471,0.3753],[0.0013,0.0,0.0,0.0501,0.0974,0.1138,0.3484,0.3889],[0.0012,0.0,0.0,0.0467,0.0916,0.1083,0.3492,0.4031],[0.001,0.0,0.0,0.0433,0.0858,0.1027,0.3495,0.4177],[0.0009,0.0,0.0,0.04,0.08,0.097,0.3491,0.4329],[0.0008,0.0,0.0,0.0368,0.0744,0.0912,0.3482,0.4485],[0.0007,0.0,0.0,0.0337,0.069,0.0854,0.3465,0.4646],[0.0006,0.0,0.0,0.0308,0.0637,0.0796,0.3442,0.4812],[0.0005,0.0,0.0,0.0279,0.0586,0.0738,0.341,0.4982],[0.0004,0.0,0.0,0.0252,0.0536,0.0681,0.3371,0.5155],[0.0004,0.0,0.0,0.0227,0.0489,0.0624,0.3323,0.5333],[0.0003,0.0,0.0,0.0203,0.0445,0.0569,0.3266,0.5514],[0.0002,0.0,0.0,0.018,0.0402,0.0516,0.3201,0.5698],[0.0002,0.0,0.0,0.0159,0.0363,0.0465,0.3126,0.5886],[0.0002,0.0,0.0,0.014,0.0326,0.0415,0.3042,0.6076],[0.0001,0.0,0.0,0.0122,0.0291,0.0369,0.2949,0.6268],[0.0001,0.0,0.0,0.0105,0.0259,0.0325,0.2847,0.6463],[0.0001,0.0,0.0,0.009,0.023,0.0283,0.2736,0.666],[0.0001,0.0,0.0,0.0077,0.0203,0.0245,0.2617,0.6858],[0.0,0.0,0.0,0.0065,0.0178,0.021,0.249,0.7057],[0.0,0.0,0.0,0.0054,0.0156,0.0178,0.2355,0.7258],[0.0,0.0,0.0,0.0044,0.0135,0.0149,0.2213,0.7458],[0.0,0.0,0.0,0.0036,0.0117,0.0123,0.2065,0.7659],[0.0,0.0,0.0,0.0029,0.0101,0.01,0.1912,0.7858],[0.0,0.0,0.0,0.0023,0.0086,0.008,0.1754,0.8056],[0.0,0.0,0.0,0.0018,0.0073,0.0063,0.1594,0.8252],[0.0,0.0,0.0,0.0014,0.0062,0.0049,0.1432,0.8443],[0.0,0.0,0.0,0.001,0.0052,0.0037,0.1271,0.8631],[0.0,0.0,0.0,0.0007,0.0043,0.0027,0.1111,0.8812],[0.0,0.0,0.0,0.0005,0.0035,0.0019,0.0956,0.8985],[0.0,0.0,0.0,0.0004,0.0028,0.0013,0.0806,0.915],[0.0,0.0,0.0,0.0002,0.0022,0.0009,0.0663,0.9304],[0.0,0.0,0.0,0.0001,0.0017,0.0005,0.0531,0.9445],[0.0,0.0,0.0,0.0001,0.0013,0.0003,0.041,0.9573],[0.0,0.0,0.0,0.0,0.0009,0.0002,0.0303,0.9686],[0.0,0.0,0.0,0.0,0.0006,0.0001,0.0211,0.9782],[0.0,0.0,0.0,0.0,0.0004,0.0,0.0135,0.9861],[0.0,0.0,0.0,0.0,0.0002,0.0,0.0075,0.9923],[0.0,0.0,0.0,0.0,0.0001,0.0,0.0033,0.9966],[0.0,0.0,0.0,0.0,0.0,0.0,0.0008,0.9992],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0]]};
+  const TUNED = [{"p":1,"gamma":[0.5703],"beta":[0.3482]},{"p":2,"gamma":[0.5023,0.9168],"beta":[0.4784,0.2859]},{"p":3,"gamma":[0.4085,0.8575,1.0448],"beta":[0.5067,0.343,0.1692]},{"p":4,"gamma":[0.3787,0.7705,1.0286,1.2681],"beta":[0.5333,0.3663,0.2,0.0941]},{"p":5,"gamma":[0.2782,0.6604,0.8148,1.1269,1.2834],"beta":[0.5377,0.4157,0.2777,0.1408,0.09]},{"p":6,"gamma":[0.215,0.4653,0.6146,0.8149,1.1226,1.1914],"beta":[0.5104,0.3522,0.3189,0.2115,0.1172,0.0789]},{"p":7,"gamma":[0.1828,0.4216,0.5283,0.7025,0.9151,1.1951,1.1411],"beta":[0.5413,0.375,0.3122,0.2702,0.169,0.1051,0.0559]},{"p":8,"gamma":[0.16,0.3747,0.4979,0.587,0.764,1.0003,1.1525,1.1659],"beta":[0.5235,0.3738,0.3019,0.2527,0.1953,0.1228,0.0824,0.0281]}];
+
+  /* ---------- engine: exact simulation on the prism (expects SLIDE and TUNED) ---------- */
+  const PRISM = (() => {
+    const n = 6, N = 64;
+    const E = [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5]];
+    const C = new Float64Array(N);
+    for (let x = 0; x < N; x++) for (const [i, j] of E) if (((x >> i) & 1) !== ((x >> j) & 1)) C[x] += 1;
+    let Cmax = 0; for (let x = 0; x < N; x++) Cmax = Math.max(Cmax, C[x]);
+    return { n, N, E, C, Cmax };
+  })();
+
+  // Layer k applies exp(-i gamma_k H_C) = exp(i gamma_k C), then exp(-i beta_k H_B) = exp(i beta_k sum_j X_j).
+  function qaoaRun(gammas, betas) {
+    const { n, N, C, Cmax } = PRISM;
+    const re = new Float64Array(N).fill(1 / Math.sqrt(N)), im = new Float64Array(N);
+    for (let k = 0; k < gammas.length; k++) {
+      for (let x = 0; x < N; x++) {
+        const c = Math.cos(gammas[k] * C[x]), s = Math.sin(gammas[k] * C[x]), r = re[x], m = im[x];
+        re[x] = r * c - m * s; im[x] = r * s + m * c;
+      }
+      const cb = Math.cos(betas[k]), sb = Math.sin(betas[k]);
+      for (let j = 0; j < n; j++) {
+        const bit = 1 << j;
+        for (let x = 0; x < N; x++) {
+          if (x & bit) continue;
+          const y = x | bit, ar = re[x], ai = im[x], br = re[y], bi = im[y];
+          re[x] = cb * ar - sb * bi; im[x] = cb * ai + sb * br;
+          re[y] = cb * br - sb * ai; im[y] = cb * bi + sb * ar;
+        }
+      }
+    }
+    let mean = 0, pmax = 0;
+    for (let x = 0; x < N; x++) { const pr = re[x] * re[x] + im[x] * im[x]; mean += pr * C[x]; if (C[x] === Cmax) pmax += pr; }
+    return { mean, pmax };
+  }
+
+  // The chopped slide: p pieces of length T / p, with s_k = (k - 1/2) / p in the middle of piece k.
+  function rampAngles(p, T) {
+    const g = [], b = [];
+    for (let k = 1; k <= p; k++) { const s = (k - 0.5) / p; g.push(s * T / p); b.push((1 - s) * T / p); }
+    return { g, b };
+  }
+  function ramp(p, T) { const { g, b } = rampAngles(p, T); return qaoaRun(g, b); }
+
+  // Pieces longer than pi/2 make the mixer angle wrap around; beyond that the circuit is no slide anymore.
+  const sliceLimit = (p) => p * Math.PI / 2;
+  function slideCurve(p, Tmax, dT) {
+    const pts = [];
+    for (let T = 0; T <= Tmax + 1e-9; T += dT) pts.push([T, ramp(p, T).pmax]);
+    return pts;
+  }
+  function bestT(p, Tmax, dT) {
+    let best = { T: 0, pmax: -1 };
+    for (let T = 0; T <= Math.min(Tmax, sliceLimit(p)) + 1e-9; T += dT) {
+      const v = ramp(p, T).pmax;
+      if (v > best.pmax) best = { T, pmax: v };
+    }
+    return best;
+  }
+
+  const slideStats = (k) => {
+    const d = SLIDE.dists[k];
+    let mean = 0; for (let c = 0; c < d.length; c++) mean += c * d[c];
+    return { gap: SLIDE.levels[k][1] - SLIDE.levels[k][0], pmax: d[PRISM.Cmax], mean };
+  };
+  const MIN_GAP = (() => {
+    let best = { gap: Infinity, s: 0 };
+    SLIDE.s.forEach((s, k) => { const g = SLIDE.levels[k][1] - SLIDE.levels[k][0]; if (g < best.gap) best = { gap: g, s }; });
+    return best;
+  })();
+
+  /* ---------- Toy 1: sliding from the cube to the cut ---------- */
+  (() => {
+    const byId = (id) => document.getElementById(id);
+    const slider = byId('slS'), levelsSvg = byId('slLevels'), histSvg = byId('slHist');
+    const last = SLIDE.s.length - 1;
+    const present = [];
+    for (let c = 0; c <= PRISM.Cmax; c++) if (PRISM.C.some((v) => v === c)) present.push(c);
+    let timer = null;
+
+    function drawLevels(k) {
+      levelsSvg.textContent = '';
+      const L = 34, R = 290, TOP = 10, B = 172, lo = -7.5, hi = 6.5;
+      const X = (s) => L + (R - L) * s, Y = (e) => B - (B - TOP) * (e - lo) / (hi - lo);
+      [-6, -3, 0, 3, 6].forEach((e) => { el('line', { x1: L, x2: R, y1: Y(e), y2: Y(e), class: 'grid' }, levelsSvg); txt(levelsSvg, L - 6, Y(e) + 4, String(e), 'lbl', 'end'); });
+      [0, 0.5, 1].forEach((s) => txt(levelsSvg, X(s), B + 14, String(s), 'lbl'));
+      txt(levelsSvg, (L + R) / 2, B + 27, 's', 'lbl');
+      const level = (j, cls) => el('polyline', { points: SLIDE.s.map((s, i) => `${X(s).toFixed(1)},${Y(SLIDE.levels[i][j]).toFixed(1)}`).join(' '), class: cls }, levelsSvg);
+      for (let j = SLIDE.levels[0].length - 1; j >= 2; j--) level(j, 'lvl');
+      level(1, 'lvl1');
+      level(0, 'lvl0');
+      const s = SLIDE.s[k], e0 = SLIDE.levels[k][0], e1 = SLIDE.levels[k][1];
+      el('line', { x1: X(s), x2: X(s), y1: TOP, y2: B, class: 'sline' }, levelsSvg);
+      el('line', { x1: X(s), x2: X(s), y1: Y(e0), y2: Y(e1), class: 'gapbar' }, levelsSvg);
+      [e0, e1].forEach((e) => el('line', { x1: X(s) - 4, x2: X(s) + 4, y1: Y(e), y2: Y(e), class: 'gapbar' }, levelsSvg));
+      el('circle', { cx: X(s), cy: Y(e0), r: 3.5, class: 'dot' }, levelsSvg);
+      txt(levelsSvg, X(s) + (s > 0.8 ? -7 : 7), (Y(e0) + Y(e1)) / 2 + 4, 'gap', 'lbl-ink', s > 0.8 ? 'end' : 'start');
+    }
+
+    function drawHist(k) {
+      histSvg.textContent = '';
+      const L = 34, R = 290, TOP = 10, B = 172, d = SLIDE.dists[k], u = SLIDE.dists[0];
+      const Y = (v) => B - (B - TOP) * v, bw = (R - L) / present.length;
+      [0, 0.5, 1].forEach((v) => { el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), class: 'grid' }, histSvg); txt(histSvg, L - 6, Y(v) + 4, v.toFixed(1), 'lbl', 'end'); });
+      present.forEach((c, i) => {
+        const x = L + i * bw, h = B - Y(d[c]);
+        el('rect', { x: x + 6, y: Y(d[c]), width: bw - 12, height: Math.max(h, 0.5), class: c === PRISM.Cmax ? 'bar-n' : 'bar-p' }, histSvg);
+        el('rect', { x: x + 4, y: Y(u[c]), width: bw - 8, height: B - Y(u[c]), class: 'ref' }, histSvg);
+        txt(histSvg, x + bw / 2, B + 14, String(c), 'lbl');
+      });
+      const xm = L + (present.length - 1) * bw + bw / 2;
+      txt(histSvg, xm, Math.max(Y(d[PRISM.Cmax]) - 5, TOP + 9), d[PRISM.Cmax].toFixed(2), 'lbl-ink');
+      txt(histSvg, (L + R) / 2, B + 27, 'cut value', 'lbl');
+    }
+
+    function draw() {
+      const k = +slider.value, st = slideStats(k);
+      byId('slSOut').textContent = SLIDE.s[k].toFixed(2);
+      byId('slGap').textContent = st.gap.toFixed(3);
+      byId('slMin').textContent = `${MIN_GAP.gap.toFixed(3)} at s = ${MIN_GAP.s.toFixed(2)}`;
+      byId('slP').textContent = st.pmax.toFixed(3);
+      byId('slE').textContent = st.mean.toFixed(2);
+      drawLevels(k);
+      drawHist(k);
+    }
+
+    function stop() { clearInterval(timer); timer = null; byId('slPlay').textContent = 'Play'; }
+    byId('slPlay').addEventListener('click', () => {
+      if (timer) { stop(); return; }
+      if (+slider.value >= last) slider.value = 0;
+      byId('slPlay').textContent = 'Pause';
+      timer = setInterval(() => {
+        slider.value = Math.min(last, +slider.value + 1);
+        draw();
+        if (+slider.value >= last) stop();
+      }, 45);
+    });
+    slider.addEventListener('input', () => { if (timer) stop(); draw(); });
+    draw();
+  })();
+
+  /* ---------- Toy 2: walk slowly, or walk cleverly ---------- */
+  (() => {
+    const byId = (id) => document.getElementById(id);
+    const pSlider = byId('wkP'), tSlider = byId('wkT'), anglesSvg = byId('wkAngles'), curveSvg = byId('wkCurve');
+    const TMAX = 20, DT = 0.05, PER = 20;
+    let fine = null, curve = null, curveP = 0, pending = false;
+
+    function drawAngles(p, ramp_, tuned) {
+      anglesSvg.textContent = '';
+      const L = 34, R = 290, TOP = 10, B = 172, top = Math.PI / 2;
+      const Y = (v) => B - (B - TOP) * Math.min(v, top) / top, w = (R - L) / p, bw = Math.min(16, w * 0.3);
+      [0, 0.5, 1, 1.5].forEach((v) => { el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), class: 'grid' }, anglesSvg); txt(anglesSvg, L - 6, Y(v) + 4, v.toFixed(1), 'lbl', 'end'); });
+      for (let k = 0; k < p; k++) {
+        const cx = L + w * (k + 0.5);
+        [[ramp_.g[k], tuned.gamma[k], cx - bw - 1, 'bar-p'], [ramp_.b[k], tuned.beta[k], cx + 1, 'bar-n']].forEach(([v, t, x, fill]) => {
+          el('rect', { x, y: Y(v), width: bw, height: Math.max(B - Y(v), 0.5), class: fill }, anglesSvg);
+          if (v > top) el('polygon', { points: `${x},${TOP + 6} ${x + bw},${TOP + 6} ${x + bw / 2},${TOP - 1}`, class: 'clipmark' }, anglesSvg);
+          el('line', { x1: x - 3, x2: x + bw + 3, y1: Y(t), y2: Y(t), class: 'tick' }, anglesSvg);
+        });
+        txt(anglesSvg, cx, B + 14, String(k + 1), 'lbl');
+      }
+      txt(anglesSvg, (L + R) / 2, B + 27, 'layer k', 'lbl');
+    }
+
+    function drawCurve(p, T, here, tunedP) {
+      curveSvg.textContent = '';
+      const L = 34, R = 290, TOP = 10, B = 172;
+      const X = (t) => L + (R - L) * t / TMAX, Y = (v) => B - (B - TOP) * v;
+      [0, 0.5, 1].forEach((v) => { el('line', { x1: L, x2: R, y1: Y(v), y2: Y(v), class: 'grid' }, curveSvg); txt(curveSvg, L - 6, Y(v) + 4, v.toFixed(1), 'lbl', 'end'); });
+      [0, 5, 10, 15, 20].forEach((t) => txt(curveSvg, X(t), B + 14, String(t), 'lbl'));
+      txt(curveSvg, (L + R) / 2, B + 27, 'total time T', 'lbl');
+      const pts = (arr) => arr.map(([t, v]) => `${X(t).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+      el('line', { x1: L, x2: R, y1: Y(6 / 64), y2: Y(6 / 64), class: 'uni' }, curveSvg);
+      el('polyline', { points: pts(fine), class: 'fine' }, curveSvg);
+      const lim = sliceLimit(p);
+      const inside = curve.filter(([t]) => t <= lim + 1e-9), outside = curve.filter(([t]) => t >= inside[inside.length - 1][0] - 1e-9);
+      if (outside.length > 1) el('polyline', { points: pts(outside), class: 'trace faint' }, curveSvg);
+      el('polyline', { points: pts(inside), class: 'trace' }, curveSvg);
+      el('line', { x1: L, x2: R, y1: Y(tunedP), y2: Y(tunedP), class: 'qline' }, curveSvg);
+      txt(curveSvg, R, Y(tunedP) - 5, `QAOA, p = ${p} tuned`, 'lbl-ink', 'end');
+      el('circle', { cx: X(T), cy: Y(here), r: 4, class: 'dot' }, curveSvg);
+    }
+
+    function draw() {
+      const p = +pSlider.value, T = tSlider.value / PER;
+      if (!fine) fine = slideCurve(40, TMAX, 0.1);
+      if (curveP !== p) { curve = slideCurve(p, TMAX, DT); curveP = p; }
+      const tuned = TUNED[p - 1], here = ramp(p, T), best = qaoaRun(tuned.gamma, tuned.beta);
+      byId('wkPOut').textContent = String(p);
+      byId('wkTOut').textContent = T.toFixed(2);
+      byId('wkSlideP').textContent = here.pmax.toFixed(3);
+      byId('wkSlideE').textContent = here.mean.toFixed(2);
+      byId('wkQaoaP').textContent = best.pmax.toFixed(3);
+      byId('wkQaoaE').textContent = best.mean.toFixed(2);
+      byId('wkFineP').textContent = ramp(40, T).pmax.toFixed(3);
+      drawAngles(p, rampAngles(p, T), tuned);
+      drawCurve(p, T, here.pmax, best.pmax);
+    }
+    const schedule = () => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; draw(); }); };
+    pSlider.addEventListener('input', schedule);
+    tSlider.addEventListener('input', schedule);
+    byId('wkBest').addEventListener('click', () => { tSlider.value = Math.round(bestT(+pSlider.value, TMAX, DT).T * PER); draw(); });
+    draw();
+  })();
+})();
+</script>
