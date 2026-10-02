@@ -2,7 +2,9 @@
 
 In this post, I want to understand what QAOA actually does when we stop looking at it as a list of gates.
 
-The short version: QAOA lives on a graph, the Hamming cube, and it keeps switching between two ways of looking at that graph. One way are the bitstrings themselves, the other way are the frequencies of the cube. If you have ever seen the split-step Fourier method for the Schrödinger equation, this is exactly that. But let us build this up slowly.
+The short version: QAOA lives on a graph, the Hamming cube, and it keeps switching between two ways of looking at that graph. One way are the bitstrings themselves, the other way are the frequencies of the cube. If you have ever seen the split-step Fourier method for the Schrödinger equation, this is exactly that.
+
+The slightly longer version: nothing in this story really needs the cube. It needs some graph on the candidate solutions, the diffusion that spreads along this graph and the frequencies of that diffusion. The cube is just the most popular choice. To make this visible, I will carry a second graph along, a tree, and redo every step on it. Spoiler: QAOA works there too, it just sees the problem differently. But let us build this up slowly.
 
 In a previous post (XanaduSpectralmethodsPaper) we already met the graph Laplacian of the Boolean hypercube. We will need it again here, so if something about $L$ looks unfamiliar, have a look there first.
 
@@ -12,7 +14,7 @@ In a previous post (XanaduSpectralmethodsPaper) we already met the graph Laplaci
 
 <a id="problem-1"></a>
 
-> **Problem 1: MaxCut.**  
+> **Problem 1: MaxCut.**
 > Given a graph $G = (V, E)$ with $n$ vertices, split the vertices into two sides such that as many edges as possible go between the two sides.
 
 We will refer to this as [Problem 1](#problem-1).
@@ -67,15 +69,115 @@ $$
 A = X_1 + X_2 + \dots + X_n .
 $$
 
-This is exactly the operator QAOA calls the **mixer** (usually written $B$). We now have the two ingredients in one picture: $C$ gives the values on the corners, and $A$ connects corners through single-bit flips. Next we will look at the frequencies of this graph, which make the mixer's action particularly simple.
+This is exactly the operator QAOA calls the **mixer** (usually written $B$). We now have the two ingredients in one picture: $C$ gives the values on the corners, and $A$ connects corners through single-bit flips.
 
-## Fourier analysis on the cube
+5. Before we go on, let me point out the one decision we made without noticing. We declared two bitstrings to be neighbors when they differ in a single bit. MaxCut did not tell us that, we chose it. The cost lives on the corners, the edges are only our idea of what a small change is. I will call this choice the **stage**. Everything the mixer does depends on it, so it is worth building a second stage to compare with.
 
-Ok, so what is the Fourier transform on this cube? There are two ways to get there. Let us start with the one we already know from the last post.
+## A second stage: bitstrings on a tree
+
+1. The cube treats all bits the same: flipping bit 1 is as small a change as flipping bit 6. Often we think differently about our bits. If they encode a number, the first bit is worth 32 and the last one is worth 1. If they encode decisions, the first ones are usually the big ones: first the country, then the city, then the street. For this kind of thinking the natural picture is a tree.
+
+2. Read the bitstring $x_1 x_2 \dots x_n$ as directions. At the root, $x_1$ tells us which branch to take, at the next branching $x_2$ decides, and so on. After $n$ steps we arrive at a leaf, and every bitstring is exactly one leaf. Here are the eight cuts of the path $1\!-\!2\!-\!3$ again, now hanging from a tree:
+
+```
+           x_1       x_2       x_3    leaf   C(x)
+
+                            +-- 0 --  000     0
+                  +-- 0 ----+
+                  |         +-- 1 --  001     1
+        +-- 0 ----+
+        |         |         +-- 0 --  010     2
+        |         +-- 1 ----+
+        |                   +-- 1 --  011     1
+ root --+
+        |                   +-- 0 --  100     1
+        |         +-- 0 ----+
+        |         |         +-- 1 --  101     2
+        +-- 1 ----+
+                  |         +-- 0 --  110     1
+                  +-- 1 ----+
+                            +-- 1 --  111     0
+```
+
+Same eight bitstrings, same costs. Only the neighborhoods changed.
+
+3. The distance between two leaves is how far we have to climb back toward the root until the two paths meet. That is $n$ minus the length of the common beginning of the two strings. So $000$ and $001$ are siblings at distance 1, $000$ and $010$ are cousins at distance 2, and $000$ and $100$ hang in different halves of the tree at distance 3. On the cube, $000$ and $100$ are neighbors. On the tree they are as far apart as it gets.
+
+4. So what is a small move on a tree? Climb up $j$ levels and slide back down, taking a random branch at every branching. Climbing one level and sliding down brings us back or to the sibling. Climbing all the way to the root can land us anywhere. In bits: keep the first $n - j$ bits and redraw the last $j$ at random.
+
+5. Now the quantum version. Redrawing the last $j$ bits at random replaces the amplitude of a string by the average over all strings that agree with it in the first $n - j$ bits. On qubits this average is the projector
+
+$$
+A_j = I \otimes \dots \otimes I \otimes \underbrace{\ket{+}\bra{+} \otimes \dots \otimes \ket{+}\bra{+}}_{\text{last } j \text{ qubits}} ,
+$$
+
+because $\ket{+}\bra{+} = \frac{1}{2}\begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}$ replaces both amplitudes of a qubit by their average. The moves on the cube were bit flips, which square to the identity. We get the same kind of move by reflecting at the average,
+
+$$
+R_j = 2A_j - I .
+$$
+
+The same trick turns the average over a single bit into a bit flip, $X_i = 2 \cdot \tfrac{1}{2}(I + X_i) - I$. So $R_1 = X_n$ just flips the last bit, and $R_n$ is the reflection at the uniform superposition, the famous diffusion operator from Grover's algorithm. The tree's version of the mixer is
+
+$$
+B_T = R_1 + R_2 + \dots + R_n ,
+$$
+
+right next to $A = X_1 + X_2 + \dots + X_n$ on the cube. Both are sums of $n$ reflections. The cube reflects every bit on its own, the tree reflects nested blocks at the end of the string.
+
+6. From now on, every section first does the cube and then repeats the same step on the tree, in a box like this one:
+
+> **On the tree.** Same bitstrings, same cost, same qubits. Only the neighborhoods change.
+
+## Classical diffusion: heat flow on the stage
+
+Before we talk about frequencies, let us move around a bit. The simplest thing you can do on a graph is to wander along its edges at random. This is diffusion, and it is the reason why the stage matters at all.
+
+1. On the cube, a walker sits on a corner and each of its bits flips independently at rate 1. Let $p_t(x)$ be the probability to find it at corner $x$ at time $t$. Probability flows from $x$ to its neighbors and back:
+
+$$
+\frac{d p_t(x)}{dt} = \sum_{y \sim x} \big(p_t(y) - p_t(x)\big), \qquad \text{or} \qquad \frac{dp}{dt} = -L\,p .
+$$
+
+Here $L = D - A$ is the graph Laplacian, where the diagonal matrix $D$ holds the degrees. On the cube every corner has $n$ neighbors, so $L = nI - A$. This is where the Laplacian comes from: it generates diffusion. On any graph, diffusion is $p_t = e^{-tL}\,p_0$, the heat equation of that graph.
+
+2. On the cube we can solve it right away, because the bits do not talk to each other. After time $t$ every bit has flipped with probability
+
+$$
+q_t = \frac{1 - e^{-2t}}{2},
+$$
+
+independently of the others. This is the noise operator from Boolean Fourier analysis and, if you squint a little, the mutation step of a genetic algorithm.
+
+3. Why should we care about diffusion in an optimization post? Because it is the most basic way to explore: start from a candidate and try small changes. Local search, mutation and simulated annealing all contain a step like this, and the QAOA mixer will turn out to be its quantum version. The good part is that diffusion respects the stage: nearby candidates are visited first. The bad part is that it forgets. Run it long enough and every corner becomes equally likely, no matter where we started and no matter what the cost says. Diffusion alone knows nothing about the problem.
+
+4. Diffusion also makes things smooth: sharp bumps in $p$ flatten out first. Which functions count as smooth depends on the stage, and that is what the frequencies in the next section are about.
+
+> **On the tree.** The tree walker has one clock for every height $j$. When clock $j$ rings, the walker climbs $j$ levels and slides back down at random, so the last $j$ bits are redrawn. All clocks ring at rate 2. Why 2? For $n = 1$ the tree is a single edge, exactly like the cube, and redrawing a bit changes it only half of the time, so the clock has to ring twice as often as the cube's flip clock. The generator is
+>
+> $$
+> L_T = 2 \sum_{j=1}^{n} (I - A_j) = nI - B_T ,
+> $$
+>
+> the same relation as $L = nI - A$ on the cube. In position space only the highest clock that has rung matters. If that is clock $J$, the walker kept its first $n - J$ bits and the last $J$ bits are uniformly random, where $P(J \le k) = e^{-2(n-k)t}$. For $n = 3$, starting at $000$:
+>
+> ```
+>  probability of one leaf    start   sibling   cousin   other half
+>  t = 0.25                   0.404    0.181    0.109      0.049
+>  t = 0.5                    0.230    0.180    0.137      0.079
+>  t = 1                      0.148    0.145    0.137      0.108
+>  t = 2                      0.127    0.127    0.127      0.123
+> ```
+>
+> Siblings even out first, then cousins, and the two halves of the tree last: diffusion with a hierarchy. As a matrix, $L_T$ is the Laplacian of a graph in which every leaf is connected to every other leaf, with weight $1.75$ to the sibling, $0.75$ to each cousin and $0.25$ to each leaf in the other half (for $n = 3$). So a stage does not have to be a plain graph, weights are fine.
+
+## Fourier analysis: the frequencies of a stage
+
+Ok, so which functions are smooth on a stage, and which are rough? This is what a Fourier transform answers. There are two ways to get there. Let us start with the one we already know from the last post.
 
 1. The Laplacian way.
 
-a) On any graph, the graph Laplacian is $L = D - A$, where the diagonal matrix $D$ holds the degrees. We already saw that for every function $f$ on the vertices
+a) We already saw that for every function $f$ on the vertices
 
 $$
 f^T L f = \sum_{\{x,y\} \in E} \big(f(x) - f(y)\big)^2 .
@@ -105,6 +207,28 @@ c) So the Hamming weight $|s|$ is the frequency. $\chi_{000}$ is constant, the w
  111      +   -   -   +   -   +   +   -           6
 ```
 
+> **On the tree.** The eigenvectors of $L_T$ are just as easy to find, and they look quite different. Pick a branching point at depth $m - 1$, that is a node where bit $m$ is decided. Take the function that is $+1$ on all leaves below its $0$-branch, $-1$ on all leaves below its $1$-branch and $0$ everywhere else. Now apply an average $A_j$. If the block of the last $j$ bits is small enough to fit into one branch, our function is constant on it and survives. If the block contains the whole branching point, plus and minus cancel and we get zero. The second case happens for the $m$ largest blocks, $j \ge n - m + 1$, so
+>
+> $$
+> L_T\,\psi = 2m\,\psi .
+> $$
+>
+> These are the **Haar wavelets**, and $m$ is their level. For $n = 3$ (a dot is a zero):
+>
+> ```
+>  level  node    000 001 010 011 100 101 110 111    eigenvalue of L_T
+>    0     -       +   +   +   +   +   +   +   +           0
+>    1    root     +   +   +   +   -   -   -   -           2
+>    2     0       +   +   -   -   .   .   .   .           4
+>    2     1       .   .   .   .   +   +   -   -           4
+>    3     00      +   -   .   .   .   .   .   .           6
+>    3     01      .   .   +   -   .   .   .   .           6
+>    3     10      .   .   .   .   +   -   .   .           6
+>    3     11      .   .   .   .   .   .   +   -           6
+> ```
+>
+> Compare with the Walsh table. On the cube the frequency counts how many bits a wave depends on, on the tree it counts how deep the wave reaches. And the rough waves of the tree are local: half of all tree waves are differences between two siblings, all with the top frequency.
+
 2. The group way.
 
 a) The bitstrings also form a group: we can add them bitwise modulo 2 (XOR). Every group like this has its own Fourier transform, built from its **characters**. For $\mathbb{Z}_2^n$ the characters are exactly the functions $\chi_s$ from above. So both ways arrive at the same functions.
@@ -125,11 +249,15 @@ $$
 
 This is just the familiar $HXH = Z$ on every qubit at once.
 
+> **On the tree.** Here comes a small plot twist. The average $A_j$ is the average over all ways of flipping some of the last $j$ bits, and every bit flip is diagonal in the Walsh basis. So the Walsh characters are eigenvectors of $L_T$ as well! The character $\chi_s$ gets the eigenvalue $2\,\ell(s)$, where $\ell(s)$ is the position of the last 1 in $s$. For example $\chi_{100} = (-1)^{x_1}$ is exactly the root wavelet with frequency 2, while $\chi_{001}$ has the top frequency 6. The eigenspaces of the tree are big enough to hold both: the global Walsh waves and the local wavelets.
+>
+> In group language: bit flips are symmetries of both stages, which is why both share the characters. Their other symmetries differ. The cube may also permute the bits, so all $\chi_s$ with the same $|s|$ have to share a frequency. The tree cannot permute bits (bit 1 sits at the root, bit $n$ at the bottom), but it may swap the two branches below any single node, so all waves that reach equally deep have to share a frequency. The waves are the same, but the stage decides which of them count as smooth.
+
 3. So which way is the right one? Laplacian or characters?
 
 On the full cube both give the same basis, but they do not carry the same information.
 
-a) The Laplacian only fixes the frequency, not the basis. All $\binom{n}{k}$ frequencies of weight $k$ share the eigenvalue $2k$, so for $n = 4$ the eigenspaces have dimensions 1, 4, 6, 4 and 1. Inside each eigenspace, any orthonormal basis is an equally good Laplacian eigenbasis. The characters are the one basis that diagonalizes every single bit flip $X_i$, not only their sum. That extra structure is what the group gives us, and it is where the fast transform $H^{\otimes n}$ and all the nice closed formulas come from.
+a) The Laplacian only fixes the frequency, not the basis. All $\binom{n}{k}$ frequencies of weight $k$ share the eigenvalue $2k$, so for $n = 4$ the eigenspaces have dimensions 1, 4, 6, 4 and 1. Inside each eigenspace, any orthonormal basis is an equally good Laplacian eigenbasis. The characters are the one basis that diagonalizes every single bit flip $X_i$, not only their sum. That extra structure is what the group gives us, and it is where the fast transform $H^{\otimes n}$ and all the nice closed formulas come from. The tree is the extreme case: its eigenspaces have dimensions 1, 1, 2, 4, 8, so the Walsh waves and the wavelets both fit in.
 
 b) The Laplacian works where there is no group. Constrained problems, think of independent sets, replace the cube by a graph on the feasible bitstrings (Hadfield et al., see Literature). Such graphs usually have no group structure, so no characters and in general no fast transform. But their Laplacian eigenvectors still give us smooth and rough modes.
 
@@ -137,7 +265,15 @@ c) The standard QAOA mixer only sees the frequency level $|s|$, which is exactly
 
 So I would say: the Laplacian is the more general idea and the characters are its sharpest special case. On the cube we use the characters, because they are explicit and fast. Off the cube only the Laplacian survives.
 
-4. One more thing before we go on: cost functions like MaxCut have very sparse spectra. Write $e_i$ for the bitstring with a single 1 at position $i$. Edge $(i,j)$ is cut when $x_i \neq x_j$, which is $\big(1 - \chi_{e_i \oplus e_j}(x)\big)/2$. Summing over the edges:
+4. Back to the heat flow. In the Fourier basis it becomes trivial, every mode just decays with its own eigenvalue:
+
+$$
+\hat p_t(s) = e^{-2|s| t}\,\hat p_0(s).
+$$
+
+High frequencies die first, and for $t \to \infty$ only the constant mode survives: the uniform distribution. On the tree, a wavelet at level $m$ decays as $e^{-2mt}$. Sibling differences die fastest and the difference between the two halves of the tree survives longest, which is exactly the hierarchy from the table above.
+
+5. One more thing before we go on: cost functions like MaxCut have very sparse spectra. Write $e_i$ for the bitstring with a single 1 at position $i$. Edge $(i,j)$ is cut when $x_i \neq x_j$, which is $\big(1 - \chi_{e_i \oplus e_j}(x)\big)/2$. Summing over the edges:
 
 $$
 C(x) = \frac{|E|}{2} - \frac{1}{2} \sum_{(i,j) \in E} \chi_{e_i \oplus e_j}(x) .
@@ -145,29 +281,7 @@ $$
 
 So MaxCut only has Fourier weight at frequency 0 and at weight-2 frequencies, one per edge. This sparsity is the reason why QAOA's operators are local and can be implemented as short circuits.
 
-## Classical diffusion: heat flow on the cube
-
-1. Let us start with something classical. A walker sits on a corner and each of its bits flips independently at rate 1. Its probability distribution $p_t$ follows the heat equation on the cube:
-
-$$
-\frac{dp}{dt} = -L\,p .
-$$
-
-2. In the Fourier basis this is trivial. Every mode just decays with its own eigenvalue:
-
-$$
-\hat p_t(s) = e^{-2|s| t}\,\hat p_0(s).
-$$
-
-High frequencies die first, and for $t \to \infty$ only the constant mode survives: the uniform distribution.
-
-3. In position space the same thing factorizes over the bits. After time $t$ every bit has flipped with probability
-
-$$
-q_t = \frac{1 - e^{-2t}}{2},
-$$
-
-independently of the others. This is the noise operator from Boolean Fourier analysis and, if you squint a little, the mutation step of a genetic algorithm.
+> **On the tree.** The same formula, read with the frequencies of the tree. Edge $(i,j)$ is the wave $\chi_{e_i \oplus e_j}$, and its frequency on the tree is $2\max(i,j)$: an edge counts as smooth when both of its vertices sit close to the root. For the six-vertex prism we use below, the edges spread over the tree frequencies 4, 6, 8, 10 and 12, with an average of 8.9 out of 12. On the cube every edge sits at 4 out of 12. So MaxCut looks a lot rougher on the tree, and on the tree it even depends on how we number the vertices.
 
 ## Quantum diffusion: the mixer
 
@@ -177,7 +291,7 @@ $$
 i\,\frac{d\psi}{d\beta} = A\,\psi, \qquad \psi_\beta = e^{-i\beta A}\,\psi_0 .
 $$
 
-This is the QAOA mixer, a continuous-time quantum walk on the cube. In the Fourier basis:
+This is the QAOA mixer, a continuous-time quantum walk on the cube. Since $A = nI - L$, it is the heat flow $e^{-tL}$ with the time $t$ replaced by $-i\beta$, up to a global phase. In the Fourier basis:
 
 $$
 \hat\psi_\beta(s) = e^{-i\beta(n - 2|s|)}\,\hat\psi_0(s).
@@ -201,6 +315,39 @@ b) Two values of $\beta$ are fun to look at. At $\beta = \pi/2$ every bit flips 
  quantum, beta = pi/2      0                 1
  classical, any t          > 0.125           < 0.125
 ```
+
+> **On the tree.** The tree mixer is $e^{-i\beta B_T}$. All the reflections $R_j$ commute, because the blocks are nested, and each of them squares to the identity. So exactly as for a single qubit,
+>
+> $$
+> e^{-i\beta B_T} = \prod_{j=1}^{n} \big(\cos\beta\, I - i \sin\beta\, R_j\big) .
+> $$
+>
+> In frequencies: a wavelet at level $m$ is an eigenvector of $B_T = nI - L_T$ with eigenvalue $n - 2m$, so it rotates by $e^{-i\beta(n - 2m)}$. These are the same speeds as on the cube, $n - 2|s|$. Only the groups of waves that share a speed are different: $1, 1, 2, 4$ waves for $n = 3$ instead of $1, 3, 3, 1$.
+>
+> As a circuit: on the last $j$ qubits, $R_j = H^{\otimes j}\,\big(2\ket{0\dots 0}\bra{0\dots 0} - I\big)\,H^{\otimes j}$. So every factor is a phase on $\ket{0 \dots 0}$, controlled by all $j$ qubits and sandwiched between Hadamards. For $j = 1$ it is the cube's $e^{-i\beta X}$ on the last qubit, for $j = n$ it is Grover's diffusion operator with a tunable angle. For $n = 3$:
+>
+> ```
+>  x_1  ------------------------------------------------ H --o-- H --
+>                                                            |
+>  x_2  ------------------------------- H --o-- H ------ H --o-- H --
+>                                           |                |
+>  x_3  ---- exp(-i beta X) ----------- H --o-- H ------ H --o-- H --
+>
+>                j = 1                      j = 2            j = 3
+>
+>  o--o: phase exp(-2 i beta) if all connected qubits are 0
+> ```
+>
+> In positions something new happens. Starting from one leaf, the probability to end up in the other half of the tree is at most $2^{1-n}$, for every $\beta$. The only move that crosses the root is the reflection at the uniform superposition, and just like a single Grover step it moves only a tiny amplitude to each string. For $n = 3$, starting at $000$:
+>
+> ```
+>  probability of one leaf    start   sibling   cousin   other half
+>  quantum, beta = pi/4       0.156    0.406    0.156      0.031
+>  quantum, beta = pi/2       0.063    0.563    0.063      0.063
+>  classical, t = 2           0.127    0.127    0.127      0.123
+> ```
+>
+> Classically, the tree walker reaches the other half without trouble. Quantum mechanically, it almost never does. On the cube it was the other way around: the quantum walk reached the opposite corner with certainty, the classical one never had more than $2^{-n}$ there. So quantum does not mean faster everywhere. The stage decides.
 
 ## The cost layer is a potential
 
@@ -238,7 +385,9 @@ d) Example: the triangular prism, two triangles connected by three rungs, 9 edge
 
 e) Other vectors in the same eigenspace contain zeros and round ambiguously. That is the same degeneracy we saw on the cube, where the characters had to pick a basis for us.
 
-4. So QAOA alternates between two Laplacians. The mixer is generated by the Laplacian of the cube, a graph on $2^n$ corners, and plays the kinetic term. The cost is the quadratic form of the problem graph's Laplacian, a graph on $n$ vertices, and plays the potential.
+4. So QAOA alternates between two Laplacians. The mixer is generated by the Laplacian of the stage, here the cube, a graph on $2^n$ corners, and plays the kinetic term. The cost is the quadratic form of the problem graph's Laplacian, a graph on $n$ vertices, and plays the potential.
+
+> **On the tree.** Nothing changes in this section, and that is the point. The cost layer is diagonal in the bitstrings and does not know about edges at all. Swapping the stage only swaps the mixer. The problem graph and its Laplacian $L_G$ also stay as they are: the problem graph belongs to the problem, the stage belongs to the algorithm. Even the start state stays, because $\ket{+}^{\otimes n}$ is the constant wave, frequency 0, on the tree as well.
 
 ## QAOA is a split-step Fourier method
 
@@ -271,7 +420,9 @@ b) A classical simulation costs $O(p\,n\,2^n)$ with the fast Walsh-Hadamard tran
 
 c) At depth 1 the mixer cannot change Fourier magnitudes, only phases. Whatever frequency content the cost layer creates is all the mixer has to work with.
 
-d) The recipe only needs a mixer that walks on some graph: transform with that graph's Laplacian eigenvectors, apply the kinetic phase, transform back. On the full cube that transform is the fast Walsh-Hadamard transform. Constrained mixers keep the split-step structure, but in general lose the fast transform.
+d) The recipe only needs a mixer that walks on some graph: transform with that graph's Laplacian eigenvectors, apply the kinetic phase, transform back. On the full cube that transform is the fast Walsh-Hadamard transform. Constrained mixers keep the split-step structure, but in general lose the fast transform. We will collect a few more stages at the end.
+
+> **On the tree.** The same four steps. Thanks to the plot twist we may even keep $H^{\otimes n}$ as the transform and only change the phase table in step 3: mode $s$ is rotated by $e^{-i\beta(n - 2\ell(s))}$ instead of $e^{-i\beta(n - 2|s|)}$, with $\ell(s)$ the position of the last 1 in $s$. On qubits, QAOA on the tree is the cube's circuit with a different diagonal in the middle. If you prefer the tree's own waves, use the Haar transform instead, which also has fast classical and quantum circuits (Fijany and Williams, see Literature). Either way: same split-step method, different frequencies.
 
 ## Depth 1 on a six-vertex prism
 
@@ -284,12 +435,109 @@ d) The recipe only needs a mixer that walks on some graph: transform with that g
  expected cut <C>          5.94     (random: 4.50, maximum: 7)
  approximation ratio       0.85
  P(maximum cut)            0.40     (6 of the 64 strings are maximum cuts)
- most likely string        101010, a maximum cut
+ most likely string        101010, a maximum cut (tied with the other five)
 
  Walsh weight by |s|       |s| = 0: 0.495   2: 0.409   4: 0.091   6: 0.005
 ```
 
 3. Interesting detail: only even frequencies show up. MaxCut does not change if we flip all bits, so the odd frequencies never get any weight.
+
+> **On the tree.** Same prism, same cost, but the tree mixer, with vertex $i$ deciding at depth $i$. The landscape now has to be scanned for $\beta \in [0, \pi]$:
+>
+> ```
+>  best angles               gamma = 0.518 (0.165 pi),  beta = 0.155 (0.049 pi)
+>  expected cut <C>          5.63     (cube: 5.94)
+>  approximation ratio       0.80     (cube: 0.85)
+>  P(maximum cut)            0.30     (cube: 0.40)
+>  most likely string        001110, a maximum cut
+>
+>  weight by tree level      0: 0.559   2: 0.036   3: 0.072   4: 0.054   5: 0.107   6: 0.172
+> ```
+>
+> Worse than the cube, and with more layers the gap grows. Tuning all angles for the best expected cut:
+>
+> ```
+>  P(maximum cut)    p = 1    p = 2    p = 3
+>  cube              0.401    0.721    0.923
+>  tree              0.300    0.481    0.656
+> ```
+>
+> Three things are different on the tree. First, the edges of the prism live on five different tree frequencies, so one $\beta$ cannot treat them alike, while on the cube they all rotate together. Second, the order of the vertices now matters: vertex 1 at the root is a big decision, vertex 6 at the bottom a small one. For MaxCut this hierarchy is made up, the problem has no preferred vertex. I tried all 720 orders: at depth 1 the best expected cut ranges from 5.58 to 5.65. So here the order is a small effect, but on the cube it does not exist at all. Third, and I like this one: on the cube the six maximum cuts come out exactly equally likely, $0.067$ each, because the cube treats all vertices alike. On the tree they split into three pairs (a cut and its mirror image) with $0.0507$, $0.0506$ and $0.0485$. The stage has broken the symmetry of the prism.
+
+## Swapping the stage
+
+Ok, time to zoom out. Here is the recipe we have now used twice:
+
+1. The recipe.
+
+a) Pick a **stage**: a graph whose vertices are the candidate solutions and whose edges are the small moves. Weights are allowed.
+
+b) Its Laplacian $L$ generates diffusion, $e^{-tL}$.
+
+c) The eigenvectors of $L$ are the waves of the stage and the eigenvalues are their frequencies. Changing into the basis of waves is the stage's Fourier transform.
+
+d) The mixer is the quantum diffusion $e^{-i\beta B}$, where $B$ sums up the moves. For a regular stage $B = dI - L$, so every wave just rotates with its own frequency.
+
+e) The start state is the lowest wave, the uniform superposition over the stage.
+
+f) The cost layer stays exactly the same.
+
+2. What we have to check when we swap.
+
+a) Can a quantum computer run the mixer? The cube needs one rotation per qubit, the tree one multi-controlled phase per level. For a random graph on $2^n$ vertices there is no short circuit.
+
+b) Can we prepare the start state? Easy for a stage that uses all $2^n$ bitstrings, much harder when it only contains some of them.
+
+c) Does the stage fit the problem? Roughly: good solutions should be a few small moves away from other good solutions. For MaxCut on the cube all edges even sit at the same frequency. As we saw on the tree, this is not something we get for free.
+
+3. A small zoo. These are the stages I know of, together with their waves:
+
+| Stage | Small move | Waves | Mixer circuit | Where it shows up |
+|---|---|---|---|---|
+| Hamming cube $Q_n$ | flip one bit | Walsh characters, $H^{\otimes n}$ | $e^{-i\beta X}$ on every qubit | standard QAOA |
+| Binary tree | redraw the last $j$ bits | Haar wavelets (or Walsh, with other frequencies) | nested Grover reflections | this post; quantum walks on decision and backtracking trees |
+| Ring $\mathbb{Z}_{2^n}$ | add or subtract 1 | sines and cosines, the QFT | QFT, phases, inverse QFT | quantum walk optimisation (Marsh and Wang) |
+| Complete graph | jump anywhere | constant plus everything else | one Grover reflection | Grover mixers (Bärtschi and Eidenbenz) |
+| Hamming-weight slice | swap a 0 and a 1 | slice harmonics (Filmus) | XY gates | constraints like "exactly $k$ ones" (Hadfield et al., Wang et al.) |
+| Colorings $\{1,\dots,q\}^n$ | recolor one vertex | $q$-point Fourier transform on every vertex | one qudit mixer per vertex | graph coloring, Max-$k$-Cut |
+| Permutations $S_n$ | swap two positions | Fourier transform on $S_n$ (Young diagrams) | swap networks | traveling salesperson, scheduling |
+
+a) The ring is the nicest one to look at. Line up the 64 bitstrings as the numbers $v = 0, \dots, 63$, with $x_1$ as the most significant bit, and connect $v$ with $v \pm 1$ (and 63 with 0). The ring is the group $\mathbb{Z}_{64}$ instead of $\mathbb{Z}_2^6$, so its characters are the good old $e^{2\pi i k v/64}$ and the transform is the ordinary DFT, on qubits the QFT. Here even the transform changed. QAOA on the ring is the split-step Fourier method for a particle hopping around a circle, which is as close to the textbook as it gets: the frequency of the wave $k$ is $2 - 2\cos(2\pi k/64)$, the lattice version of $k^2$.
+
+b) The complete graph is the other extreme. It has only two frequencies: 0 for the constant wave and one shared frequency for everything else. Its mixer only sees how much amplitude sits on each cost value, never which strings are close to each other.
+
+c) The slice keeps only the bitstrings with exactly $k$ ones. Constraints like that come for free, the stage simply does not contain anything else. The price is the start state: the uniform superposition over the slice is a Dicke state, which needs its own circuit.
+
+4. So which stage is best? Let us put four of them on two problems. The first one is MaxCut on the prism. For the second one, read the bitstring as a binary number $v$, again with $x_1$ as the most significant bit, and ask for $v$ to be as close as possible to 41:
+
+$$
+C(x) = -\,|v(x) - 41| .
+$$
+
+Yes, the answer is $101001$. It is a toy, but its landscape has a single peak on the number line. For both problems I tuned the angles of depth 1 and depth 2 for the best $\langle C \rangle$, with every angle between $0$ and $2\pi$ and many random starts:
+
+```
+ MaxCut on the prism                    p = 1          p = 2
+ (expected cut, P(maximum cut))
+ cube                                   5.94, 0.40     6.60, 0.72
+ tree                                   5.63, 0.30     6.21, 0.48
+ ring                                   5.33, 0.27     5.60, 0.34
+ complete graph                         5.59, 0.27     6.23, 0.42
+ slice with three ones                  6.44, 0.76     7.00, 1.00
+
+ Number close to 41                     p = 1          p = 2
+ (expected |v - 41|, uniform: 17.4)
+ cube                                   9.5            6.0
+ tree                                   9.0            4.7
+ ring                                   9.6            5.7
+ complete graph                         8.7            5.4
+```
+
+a) MaxCut likes the cube. The ring is bad here: neighbors on the ring like $31 = 011111$ and $32 = 100000$ can be completely different cuts. The slice wins, but it cheats a little, because we used that every maximum cut of the prism has three vertices on each side.
+
+b) The number likes the tree. Its small moves only touch the last bits, which change $v$ only a little, while on the cube even a single flip of $x_1$ jumps by 32. And the ring, where every small move changes $v$ by exactly one? It has the right idea but a slow walk: the frequencies of its smooth waves are tiny, $2 - 2\cos(2\pi/64) \approx 0.01$ for the smoothest one, so it needs very long walks. If we let $\beta$ go up to about 60, it gets to 7.0 and 4.1 and beats everything else in the table. On the cube that would make no difference at all, because the cube's mixer repeats after $\beta = \pi$.
+
+c) With only 64 strings none of these numbers are benchmarks, and for deeper circuits the landscapes get so rugged that I would not trust my optimizer anymore. The numbers are only here to show that the stage is a real design choice. No stage wins everything.
 
 ## Rotate time and you get a genetic algorithm
 
@@ -299,20 +547,26 @@ d) The recipe only needs a mixer that walks on some graph: transform with that g
 
 3. QAOA is the real-time version of the same alternation. It cannot damp anything, because every step is unitary. It can only steer phases so that amplitudes interfere constructively on good corners. That is why its angles have to be tuned, why its landscape oscillates the way it does, and why an advantage over the classical cousin is something we have to show problem by problem instead of just assuming it.
 
+> **On the tree.** In imaginary time, the tree mixer becomes the tree's heat flow $e^{-tL_T}$: keep the first decisions and throw dice for a random number of the last ones. With selection on top, this is a genetic algorithm whose mutation redraws whole tails of the string, a bit like the random rollouts of Monte Carlo tree search. Every stage comes with its own classical cousin.
+
 ## The dictionary
 
-| Object | Positions (bitstrings $x$) | Frequencies (Walsh modes $s$) |
-|---|---|---|
-| Cube adjacency $A = \sum_i X_i$ | sum over single-bit flips | multiplication by $n - 2\lvert s\rvert$ |
-| Cube Laplacian $L = nI - A$ | $n$ times the amplitude minus the sum over single-bit flips | multiplication by $2\lvert s\rvert$ (fixes the level, the characters fix the basis) |
-| MaxCut cost $C$ | multiplication by $C(x)$ | sparse: weight 0 and one weight-2 mode per edge |
-| Problem-graph Laplacian $L_G$ | $C(x) = \tfrac{1}{4} z^T L_G z$ with $z_i = (-1)^{x_i}$ | off-diagonal entries are the weight-2 coefficients of $C$, up to a factor |
-| Constrained mixer | hops along the allowed moves of a graph on feasible strings | diagonal in that graph's Laplacian eigenbasis, no characters |
-| Heat flow $e^{-tL}$ | every bit flips with probability $(1 - e^{-2t})/2$ | mode $s$ decays by $e^{-2\lvert s\rvert t}$ |
-| Mixer $e^{-i\beta A}$ | $\cos\beta$ to stay, $-i\sin\beta$ to flip, per bit | mode $s$ rotates by $e^{-i\beta(n - 2\lvert s\rvert)}$ |
-| Cost layer $e^{-i\gamma C}$ | phase kick $e^{-i\gamma C(x)}$ | spreads weight according to the spectrum of the phase pattern |
-| Initial state $\ket{+}^{\otimes n}$ | uniform over all corners | the single mode $s = 0$ |
-| One QAOA layer | phase in positions, transform | phase in frequencies, transform back |
+| Object | Any stage | Cube $Q_n$ | Tree |
+|---|---|---|---|
+| Small move | an edge of the stage | flip bit $i$, $X_i$ | redraw the last $j$ bits, $A_j$ |
+| Sum of moves (mixer generator) | $B$ | $A = \sum_i X_i$ | $B_T = \sum_j R_j$ with $R_j = 2A_j - I$ |
+| Laplacian, generator of diffusion | $L = D - B$ | $nI - A$ | $nI - B_T = 2\sum_j (I - A_j)$ |
+| Waves | eigenvectors of $L$ | Walsh characters $\chi_s$ | Haar wavelets, or $\chi_s$ |
+| Frequency | eigenvalue of $L$ | $2\lvert s\rvert$: how many bits | $2m$, or $2\ell(s)$: how deep |
+| Transform | change into the waves | $H^{\otimes n}$ | Haar transform, or $H^{\otimes n}$ |
+| Heat flow $e^{-tL}$ | wave with frequency $\lambda$ decays by $e^{-\lambda t}$ | every bit flips with probability $(1 - e^{-2t})/2$ | keep a prefix, redraw a random tail |
+| Mixer $e^{-i\beta B}$ | waves rotate with their frequencies | $\cos\beta - i\sin\beta\, X_i$ per qubit | $\cos\beta - i\sin\beta\, R_j$ per block |
+| Start state | the constant wave | $\ket{+}^{\otimes n}$ | $\ket{+}^{\otimes n}$ |
+| Cost layer $e^{-i\gamma C}$ | phase kick $e^{-i\gamma C(x)}$, the same on every stage | same | same |
+| Problem-graph Laplacian $L_G$ | $C(x) = \tfrac{1}{4} z^T L_G z$ with $z_i = (-1)^{x_i}$, part of the problem | same | same |
+| MaxCut spectrum | where the cost sits in frequency | weight 0 and one weight-2 mode per edge | edge $(i,j)$ at frequency $2\max(i,j)$ |
+| Classical cousin | mutation and selection | bit-flip mutation | redraw tails, like rollouts |
+| One QAOA layer | phase in positions, transform, phase in frequencies, transform back | phases $n - 2\lvert s\rvert$ | phases $n - 2\ell(s)$ |
 
 ## Literature
 
@@ -342,12 +596,19 @@ QAOA as phase kicks and quantum walks:
 - [Depth scaling of unstructured search via quantum approximate optimization](https://arxiv.org/abs/2403.15540) (2024). QAOA sequences from Trotterizing a continuous-time quantum walk.
 - [Guided quantum walk](https://arxiv.org/abs/2308.05418) (2023). Steering the hypercube walk with the spectrum of the problem Hamiltonian instead of variational angles.
 
-Landscapes:
+Other stages:
 
-- L. Zhou, S.-T. Wang, S. Choi, H. Pichler, M. D. Lukin, [QAOA: Performance, Mechanism, and Implementation on Near-Term Devices](https://arxiv.org/abs/1812.01041) (2018). Careful: their "FOURIER" heuristic is a Fourier series over the layer index of the angles, a different Fourier transform than the one on the cube.
-- [Connecting the Hamiltonian structure to the QAOA energy and Fourier landscape structure](https://arxiv.org/abs/2305.13594) (2023). The landscape as a Fourier series in the angles, which explains its periodicity.
+- A. T. Ogielski, D. L. Stein, [Dynamics on ultrametric spaces](https://doi.org/10.1103/PhysRevLett.55.1634) (1985). Diffusion on the leaves of a tree, the heat flow of our second stage.
+- A. Yu. Khrennikov, S. V. Kozyrev, [Pseudodifferential operators on ultrametric spaces and ultrametric wavelets](https://arxiv.org/abs/math-ph/0412062) (2005). Wavelets diagonalize this kind of diffusion, which is our Haar table.
+- M. Gavish, B. Nadler, R. R. Coifman, [Multiscale wavelets on trees, graphs and high dimensional data](https://icml.cc/imls/conferences/2010/papers/137.pdf) (2010). Haar-like bases on trees, and smoothness on a tree as fast decay of the wavelet coefficients.
+- A. Fijany, C. P. Williams, [Quantum Wavelet Transforms: Fast Algorithms and Complete Circuits](https://arxiv.org/abs/quant-ph/9809004) (1998). Circuits for the Haar transform.
+- E. Farhi, S. Gutmann, [Quantum computation and decision trees](https://arxiv.org/abs/quant-ph/9706062) (1998), and A. Montanaro, [Quantum walk speedup of backtracking algorithms](https://arxiv.org/abs/1509.02374) (2015). Quantum walks on trees whose inner nodes are partial solutions.
+- A. Bärtschi, S. Eidenbenz, [Grover Mixers for QAOA: Shifting Complexity from Mixer Design to State Preparation](https://arxiv.org/abs/2006.00354) (2020). The complete graph as the stage.
+- Z. Wang, N. C. Rubin, J. M. Dominy, E. G. Rieffel, [XY mixers: analytical and numerical results for the quantum alternating operator ansatz](https://arxiv.org/abs/1904.09314) (2020). Mixers on the Hamming-weight slice and on one-hot encodings.
+- Y. Filmus, [An orthogonal basis for functions over a slice of the Boolean hypercube](https://arxiv.org/abs/1406.0142) (2016). The waves of the slice.
+- P. Diaconis, [Group Representations in Probability and Statistics](https://doi.org/10.1214/lnms/1215467407) (1988). Random walks on groups, including permutations, analyzed with their Fourier transform.
 
-I could not find a single reference that presents QAOA explicitly as a split-step Fourier method on the cube, or the imaginary-time mutation-selection picture, or the two-Laplacian reading. I put these together from the standard facts above, so better check them against the sources before citing.
+I could not find a single reference that presents QAOA explicitly as a split-step Fourier method on the cube, or the imaginary-time mutation-selection picture, or the two-Laplacian reading. The tree stage I built for this post out of the standard pieces above. So better check all of this against the sources before citing.
 ----------------------------------------------------------------------------------------------------
 Author: Lukas Theißinger (Human)
 Google scholar: https://scholar.google.com/citations?user=aD3-DrQAAAAJ&hl=de

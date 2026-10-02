@@ -1,0 +1,36 @@
+<div class="toy" id="labA">
+  <div class="toy-head"><span class="toy-title"><strong>Toy 1.</strong> Diffusion on $Q_3$ and on the tree, classical versus quantum</span></div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Stage">
+      <button type="button" id="stageCube" aria-pressed="true">Cube</button>
+      <button type="button" id="stageTree" aria-pressed="false">Tree</button>
+    </div>
+    <div class="seg" role="group" aria-label="Kind of diffusion">
+      <button type="button" id="modeC" aria-pressed="true">Classical heat flow</button>
+      <button type="button" id="modeQ" aria-pressed="false">Quantum mixer</button>
+    </div>
+    <div class="slider">
+      <label for="cubeTime" id="cubeTimeLabel">t</label>
+      <input type="range" id="cubeTime" min="0" max="1000" value="250">
+      <output id="cubeTimeOut" for="cubeTime"></output>
+    </div>
+    <button type="button" class="btn" id="cubePlay">Play</button>
+  </div>
+  <div class="two">
+    <div>
+      <div class="panel-label" id="posLabel">Positions: corners</div>
+      <svg class="plot" id="cubeSvg" viewBox="0 0 400 300" role="img" aria-label="Three-dimensional Hamming cube with probabilities on its corners"></svg>
+    </div>
+    <div>
+      <div class="panel-label" id="modeLabel">Frequencies: Walsh modes</div>
+      <svg class="plot" id="modeSvg" viewBox="0 0 430 200" role="img" aria-label="Walsh mode coefficients of the current state"></svg>
+      <p class="caption" id="modeCaption"></p>
+    </div>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k" id="roK1">Per-bit flip probability</span><span class="val" id="roFlip"></span></div>
+    <div class="ro"><span class="k" id="roK2">P(start corner)</span><span class="val" id="roStart"></span></div>
+    <div class="ro"><span class="k" id="roK3">P(opposite corner)</span><span class="val" id="roOpp"></span></div>
+  </div>
+  <p class="caption" id="cubeColorNote"></p>
+</div>

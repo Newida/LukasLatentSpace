@@ -1,0 +1,40 @@
+<div class="toy" id="labB">
+  <div class="toy-head"><span class="toy-title"><strong>Toy 2.</strong> The depth-1 landscape $\langle C \rangle(\gamma, \beta)$ on the prism</span>
+    <span class="heat-legend"><span id="heatMin"></span><span class="ramp" aria-hidden="true"></span><span id="heatMax"></span></span>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Stage of the mixer">
+      <button type="button" id="landCube" aria-pressed="true">Cube mixer</button>
+      <button type="button" id="landTree" aria-pressed="false">Tree mixer</button>
+    </div>
+  </div>
+  <canvas id="heat" tabindex="0" role="img" aria-label="Heatmap of the expected cut size over gamma and beta. Use the sliders below to choose a point."></canvas>
+  <div class="controls">
+    <div class="slider"><label for="gSlider">γ</label><input type="range" id="gSlider" min="0" max="1000" value="0"><output id="gOut" for="gSlider"></output></div>
+    <div class="slider"><label for="bSlider">β</label><input type="range" id="bSlider" min="0" max="1000" value="0"><output id="bOut" for="bSlider"></output></div>
+    <button type="button" class="btn" id="bestBtn">Jump to best</button>
+  </div>
+  <div class="readouts">
+    <div class="ro"><span class="k">Expected cut ⟨C⟩</span><span class="val" id="roE"></span></div>
+    <div class="ro"><span class="k">Approximation ratio ⟨C⟩/7</span><span class="val" id="roR"></span></div>
+    <div class="ro"><span class="k">P(maximum cut)</span><span class="val" id="roP"></span></div>
+    <div class="ro"><span class="k">Most likely string</span><span class="val" id="roMode"></span></div>
+  </div>
+  <div class="three">
+    <div>
+      <div class="panel-label">Most likely cut</div>
+      <svg class="plot" id="graphSvg" viewBox="0 0 220 190" role="img" aria-label="The prism graph coloured by the most likely bitstring"></svg>
+      <p class="caption">Solid edges are cut by the most likely string.</p>
+    </div>
+    <div>
+      <div class="panel-label">Cut value distribution</div>
+      <svg class="plot" id="histSvg" viewBox="0 0 220 170" role="img" aria-label="Probability of each cut value compared with uniform sampling"></svg>
+      <p class="caption">Bars: after QAOA. Dashed outlines: a uniformly random string.</p>
+    </div>
+    <div>
+      <div class="panel-label" id="specLabel">Walsh weight by |s|</div>
+      <svg class="plot" id="specSvg" viewBox="0 0 220 170" role="img" aria-label="Fourier weight of the state grouped by Hamming weight of the frequency"></svg>
+      <p class="caption">Move only $\beta$ and these bars stay put.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,54 @@
+A. tree Laplacian n=3 eigenvalues [0. 2. 4. 4. 6. 6. 6. 6.]
+   Haar wavelets: eigenvalue 2 * level; Walsh chi_s: eigenvalue 2 * (deepest bit of s)  [checked]
+   Haar table n=3 (rows by level, columns x = 000 .. 111 in lexicographic string order):
+     level 0 prefix   -: + + + + + + + +   eigenvalue 0
+     level 1 prefix   -: + + + + - - - -   eigenvalue 2
+     level 2 prefix   0: + + - - . . . .   eigenvalue 4
+     level 2 prefix   1: . . . . + + - -   eigenvalue 4
+     level 3 prefix  00: + - . . . . . .   eigenvalue 6
+     level 3 prefix  10: . . . . + - . .   eigenvalue 6
+     level 3 prefix  01: . . + - . . . .   eigenvalue 6
+     level 3 prefix  11: . . . . . . + -   eigenvalue 6
+   off-diagonal weights of L_T by tree distance: {3: np.float64(0.25), 2: np.float64(0.75), 1: np.float64(1.75)}  degree 4.25
+
+B. classical heat flow from 000, n=3: probability of one leaf at each tree distance
+   t= 0.1: tree d0:0.669 d1:0.121 d2:0.060 d3:0.023   far half 0.091 | cube P(start) 0.752 P(opposite) 0.001
+   t=0.25: tree d0:0.404 d1:0.181 d2:0.109 d3:0.049   far half 0.197 | cube P(start) 0.518 P(opposite) 0.008
+   t= 0.5: tree d0:0.230 d1:0.180 d2:0.137 d3:0.079   far half 0.316 | cube P(start) 0.320 P(opposite) 0.032
+   t= 1.0: tree d0:0.148 d1:0.145 d2:0.137 d3:0.108   far half 0.432 | cube P(start) 0.183 P(opposite) 0.081
+   t= 2.0: tree d0:0.127 d1:0.127 d2:0.127 d3:0.123   far half 0.491 | cube P(start) 0.132 P(opposite) 0.118
+   closed form "climb to height J, land uniformly" checked
+
+C. quantum walk exp(+i beta L_T) from 000, n=3
+   beta=0.125pi: d0:0.4984 d1:0.3217 d2:0.0717 d3:0.0092  far half 0.0366
+   beta=0.250pi: d0:0.1563 d1:0.4062 d2:0.1563 d3:0.0312  far half 0.1250
+   beta=0.375pi: d0:0.1891 d1:0.3658 d2:0.1158 d3:0.0533  far half 0.2134
+   beta=0.500pi: d0:0.0625 d1:0.5625 d2:0.0625 d3:0.0625  far half 0.2500
+   closed form checked
+   n=2: max over beta of P(far half) = 0.5000   bound 2^(1-n) = 0.5000
+   n=3: max over beta of P(far half) = 0.2500   bound 2^(1-n) = 0.2500
+   n=4: max over beta of P(far half) = 0.1250   bound 2^(1-n) = 0.1250
+   n=6: max over beta of P(far half) = 0.0312   bound 2^(1-n) = 0.0312
+   n=2: closest to uniform: max deviation 0.0000 at beta = 0.5000 pi
+   n=3: closest to uniform: max deviation 0.2027 at beta = 0.3288 pi
+
+D. prism, depth 1 (grid then refine)
+   cube: gamma 0.570 (0.182 pi) beta 0.348 (0.111 pi)  <C> 5.939 ratio 0.848  P(max) 0.401  mode 100011 (cut 7, p=0.067)
+       weight by tree level: [0.496 0.    0.039 0.077 0.062 0.125 0.202]   by |s|: [0.496 0.    0.408 0.    0.091 0.    0.005]
+       the six maximum cuts: {'011100': 0.0668, '101010': 0.0668, '001110': 0.0668, '110001': 0.0668, '010101': 0.0668, '100011': 0.0668}
+   tree: gamma 0.518 (0.165 pi) beta 0.155 (0.049 pi)  <C> 5.631 ratio 0.804  P(max) 0.300  mode 001110 (cut 7, p=0.051)
+       weight by tree level: [0.559 0.    0.036 0.072 0.054 0.107 0.172]   by |s|: [0.559 0.    0.37  0.    0.068 0.    0.003]
+       the six maximum cuts: {'011100': 0.0485, '101010': 0.0506, '001110': 0.0507, '110001': 0.0507, '010101': 0.0506, '100011': 0.0485}
+   cost spectrum on the cube: {np.float64(4.0): np.float64(1.0)}  mean frequency 4.0  of max 12.0
+   cost spectrum on the tree: {np.float64(4.0): np.float64(0.111), np.float64(6.0): np.float64(0.222), np.float64(8.0): np.float64(0.111), np.float64(10.0): np.float64(0.222), np.float64(12.0): np.float64(0.333)}  mean frequency 8.889  of max 12.0
+
+E. tree: all 720 vertex orders at depth 1 (vertex v sits at depth perm[v] + 1)
+   distinct relabelled instances: 60
+   mean frequency of the cost on the tree: min 8.89 max 9.78
+   depth-1 best <C>: min 5.581 max 5.651;  P(max): min 0.270 max 0.300
+   correlation(mean frequency, <C>) = -0.779
+   best order (root first): vertices [1, 2, 4, 5, 6, 3]  mean freq 9.11  <C> 5.651  P(max) 0.291
+   worst order (root first): vertices [1, 6, 2, 4, 3, 5]  mean freq 9.78  <C> 5.581  P(max) 0.275
+   natural order 1..6: mean freq 8.89  <C> 5.631  P(max) 0.300
+
+wrote tree_results.json

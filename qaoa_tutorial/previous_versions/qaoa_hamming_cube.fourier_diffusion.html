@@ -23,8 +23,6 @@
   --heat-hi: #123f5c;
   --phase-s: 62%;
   --phase-l: 42%;
-  --stage-bg: #f1f7f8;
-  --stage-rule: #0e7a88;
   --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --f-math: "STIX Two Text", "Times New Roman", Times, serif;
@@ -35,7 +33,6 @@
     --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
     --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
     --phase-s: 60%; --phase-l: 64%;
-    --stage-bg: #0f1d22; --stage-rule: #45c4d1;
     color-scheme: dark;
   }
 }
@@ -44,7 +41,6 @@
   --pos: #45c4d1; --neg: #d585c6; --ink: #e6edf3; --panel: #0d1117;
   --heat-lo: #151b23; --heat-mid: #2f7f8a; --heat-hi: #b6f0f5;
   --phase-s: 60%; --phase-l: 64%;
-  --stage-bg: #0f1d22; --stage-rule: #45c4d1;
   color-scheme: dark;
 }
 
@@ -67,10 +63,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, canvas:focus-visible
 
 blockquote { padding: 0 1em; color: var(--muted); border-left: 0.25em solid var(--rule); }
 blockquote strong { color: var(--fg); }
-/* "On the tree." boxes: the same step on the second stage, readable text on a faint teal ground. */
-blockquote.stage { color: var(--fg); background: var(--stage-bg); border-left-color: var(--stage-rule); padding: 14px 16px 2px; border-radius: 0 6px 6px 0; }
-blockquote.stage pre { background: var(--bg); }
-blockquote.stage figure { margin-bottom: 14px; }
 
 code { font-family: var(--f-mono); font-size: 85%; background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 6px; }
 pre { font-family: var(--f-mono); font-size: 13.5px; line-height: 1.45; background: var(--code-bg); padding: 16px; border-radius: 6px; overflow-x: auto; }
@@ -88,7 +80,7 @@ figure { display: grid; gap: 8px; }
 figure.narrow { max-width: 340px; }
 figure.medium { max-width: 640px; }
 figcaption, .caption { font-size: 14px; color: var(--muted); line-height: 1.5; margin: 0; }
-#walsh16, #haar16 { width: 100%; max-width: 100%; aspect-ratio: 1 / 1; display: block; }
+#walsh16 { width: 100%; max-width: 100%; aspect-ratio: 1 / 1; display: block; }
 
 .toy { border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 14px; }
 .toy-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
@@ -129,7 +121,6 @@ svg .gedge.cut { stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: none; 
 svg .gv0 { fill: var(--pos); }
 svg .gv1 { fill: var(--neg); }
 svg .gvl { fill: var(--panel); font-family: var(--f-mono); font-size: 12px; font-weight: 500; }
-svg .tnode { fill: var(--muted); }
 
 /* A problem graph and its cost landscape on the same eight assignments. */
 .cut-panels { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr); gap: 20px; align-items: center; }
@@ -196,8 +187,7 @@ window.MathJax = {
 <main class="frame">
 <h1 id="top">QAOA on the Hamming Cube</h1>
 <p>In this post, I want to understand what QAOA actually does when we stop looking at it as a list of gates.</p>
-<p>The short version: QAOA lives on a graph, the Hamming cube, and it keeps switching between two ways of looking at that graph. One way are the bitstrings themselves, the other way are the frequencies of the cube. If you have ever seen the split-step Fourier method for the Schrödinger equation, this is exactly that.</p>
-<p>The slightly longer version: nothing in this story really needs the cube. It needs some graph on the candidate solutions, the diffusion that spreads along this graph and the frequencies of that diffusion. The cube is just the most popular choice. To make this visible, I will carry a second graph along, a tree, and redo every step on it. Spoiler: QAOA works there too, it just sees the problem differently. But let us build this up slowly.</p>
+<p>The short version: QAOA lives on a graph, the Hamming cube, and it keeps switching between two ways of looking at that graph. One way are the bitstrings themselves, the other way are the frequencies of the cube. If you have ever seen the split-step Fourier method for the Schrödinger equation, this is exactly that. But let us build this up slowly.</p>
 <p>In a previous post (XanaduSpectralmethodsPaper) we already met the graph Laplacian of the Boolean hypercube. We will need it again here, so if something about $L$ looks unfamiliar, have a look there first.</p>
 <h2>The problem</h2>
 <ol>
@@ -205,7 +195,7 @@ window.MathJax = {
 </ol>
 <p><a id="problem-1"></a></p>
 <blockquote>
-<p><strong>Problem 1: MaxCut.</strong>
+<p><strong>Problem 1: MaxCut.</strong><br />
 Given a graph $G = (V, E)$ with $n$ vertices, split the vertices into two sides such that as many edges as possible go between the two sides.</p>
 </blockquote>
 <p>We will refer to this as <a href="#problem-1">Problem 1</a>.</p>
@@ -294,111 +284,13 @@ $$</p>
 <p>$$
 A = X_1 + X_2 + \dots + X_n .
 $$</p>
-<p>This is exactly the operator QAOA calls the <strong>mixer</strong> (usually written $B$). We now have the two ingredients in one picture: $C$ gives the values on the corners, and $A$ connects corners through single-bit flips.</p>
-<ol start="5">
-<li>Before we go on, let me point out the one decision we made without noticing. We declared two bitstrings to be neighbors when they differ in a single bit. MaxCut did not tell us that, we chose it. The cost lives on the corners, the edges are only our idea of what a small change is. I will call this choice the <strong>stage</strong>. Everything the mixer does depends on it, so it is worth building a second stage to compare with.</li>
-</ol>
-<h2>A second stage: bitstrings on a tree</h2>
-<ol>
-<li>
-<p>The cube treats all bits the same: flipping bit 1 is as small a change as flipping bit 6. Often we think differently about our bits. If they encode a number, the first bit is worth 32 and the last one is worth 1. If they encode decisions, the first ones are usually the big ones: first the country, then the city, then the street. For this kind of thinking the natural picture is a tree.</p>
-</li>
-<li>
-<p>Read the bitstring $x_1 x_2 \dots x_n$ as directions. At the root, $x_1$ tells us which branch to take, at the next branching $x_2$ decides, and so on. After $n$ steps we arrive at a leaf, and every bitstring is exactly one leaf. Here are the eight cuts of the path $1\!-\!2\!-\!3$ again, now hanging from a tree:</p>
-</li>
-</ol>
-<pre><code>           x_1       x_2       x_3    leaf   C(x)
-
-                            +-- 0 --  000     0
-                  +-- 0 ----+
-                  |         +-- 1 --  001     1
-        +-- 0 ----+
-        |         |         +-- 0 --  010     2
-        |         +-- 1 ----+
-        |                   +-- 1 --  011     1
- root --+
-        |                   +-- 0 --  100     1
-        |         +-- 0 ----+
-        |         |         +-- 1 --  101     2
-        +-- 1 ----+
-                  |         +-- 0 --  110     1
-                  +-- 1 ----+
-                            +-- 1 --  111     0
-</code></pre>
-<p>Same eight bitstrings, same costs. Only the neighborhoods changed.</p>
-<ol start="3">
-<li>
-<p>The distance between two leaves is how far we have to climb back toward the root until the two paths meet. That is $n$ minus the length of the common beginning of the two strings. So $000$ and $001$ are siblings at distance 1, $000$ and $010$ are cousins at distance 2, and $000$ and $100$ hang in different halves of the tree at distance 3. On the cube, $000$ and $100$ are neighbors. On the tree they are as far apart as it gets.</p>
-</li>
-<li>
-<p>So what is a small move on a tree? Climb up $j$ levels and slide back down, taking a random branch at every branching. Climbing one level and sliding down brings us back or to the sibling. Climbing all the way to the root can land us anywhere. In bits: keep the first $n - j$ bits and redraw the last $j$ at random.</p>
-</li>
-<li>
-<p>Now the quantum version. Redrawing the last $j$ bits at random replaces the amplitude of a string by the average over all strings that agree with it in the first $n - j$ bits. On qubits this average is the projector</p>
-</li>
-</ol>
-<p>$$
-A_j = I \otimes \dots \otimes I \otimes \underbrace{\ket{+}\bra{+} \otimes \dots \otimes \ket{+}\bra{+}}_{\text{last } j \text{ qubits}} ,
-$$</p>
-<p>because $\ket{+}\bra{+} = \frac{1}{2}\begin{pmatrix} 1 &amp; 1 \\ 1 &amp; 1 \end{pmatrix}$ replaces both amplitudes of a qubit by their average. The moves on the cube were bit flips, which square to the identity. We get the same kind of move by reflecting at the average,</p>
-<p>$$
-R_j = 2A_j - I .
-$$</p>
-<p>The same trick turns the average over a single bit into a bit flip, $X_i = 2 \cdot \tfrac{1}{2}(I + X_i) - I$. So $R_1 = X_n$ just flips the last bit, and $R_n$ is the reflection at the uniform superposition, the famous diffusion operator from Grover's algorithm. The tree's version of the mixer is</p>
-<p>$$
-B_T = R_1 + R_2 + \dots + R_n ,
-$$</p>
-<p>right next to $A = X_1 + X_2 + \dots + X_n$ on the cube. Both are sums of $n$ reflections. The cube reflects every bit on its own, the tree reflects nested blocks at the end of the string.</p>
-<ol start="6">
-<li>From now on, every section first does the cube and then repeats the same step on the tree, in a box like this one:</li>
-</ol>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> Same bitstrings, same cost, same qubits. Only the neighborhoods change.</p>
-</blockquote>
-<h2>Classical diffusion: heat flow on the stage</h2>
-<p>Before we talk about frequencies, let us move around a bit. The simplest thing you can do on a graph is to wander along its edges at random. This is diffusion, and it is the reason why the stage matters at all.</p>
-<ol>
-<li>On the cube, a walker sits on a corner and each of its bits flips independently at rate 1. Let $p_t(x)$ be the probability to find it at corner $x$ at time $t$. Probability flows from $x$ to its neighbors and back:</li>
-</ol>
-<p>$$
-\frac{d p_t(x)}{dt} = \sum_{y \sim x} \big(p_t(y) - p_t(x)\big), \qquad \text{or} \qquad \frac{dp}{dt} = -L\,p .
-$$</p>
-<p>Here $L = D - A$ is the graph Laplacian, where the diagonal matrix $D$ holds the degrees. On the cube every corner has $n$ neighbors, so $L = nI - A$. This is where the Laplacian comes from: it generates diffusion. On any graph, diffusion is $p_t = e^{-tL}\,p_0$, the heat equation of that graph.</p>
-<ol start="2">
-<li>On the cube we can solve it right away, because the bits do not talk to each other. After time $t$ every bit has flipped with probability</li>
-</ol>
-<p>$$
-q_t = \frac{1 - e^{-2t}}{2},
-$$</p>
-<p>independently of the others. This is the noise operator from Boolean Fourier analysis and, if you squint a little, the mutation step of a genetic algorithm.</p>
-<ol start="3">
-<li>
-<p>Why should we care about diffusion in an optimization post? Because it is the most basic way to explore: start from a candidate and try small changes. Local search, mutation and simulated annealing all contain a step like this, and the QAOA mixer will turn out to be its quantum version. The good part is that diffusion respects the stage: nearby candidates are visited first. The bad part is that it forgets. Run it long enough and every corner becomes equally likely, no matter where we started and no matter what the cost says. Diffusion alone knows nothing about the problem.</p>
-</li>
-<li>
-<p>Diffusion also makes things smooth: sharp bumps in $p$ flatten out first. Which functions count as smooth depends on the stage, and that is what the frequencies in the next section are about.</p>
-</li>
-</ol>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> The tree walker has one clock for every height $j$. When clock $j$ rings, the walker climbs $j$ levels and slides back down at random, so the last $j$ bits are redrawn. All clocks ring at rate 2. Why 2? For $n = 1$ the tree is a single edge, exactly like the cube, and redrawing a bit changes it only half of the time, so the clock has to ring twice as often as the cube's flip clock. The generator is</p>
-<p>$$
-L_T = 2 \sum_{j=1}^{n} (I - A_j) = nI - B_T ,
-$$</p>
-<p>the same relation as $L = nI - A$ on the cube. In position space only the highest clock that has rung matters. If that is clock $J$, the walker kept its first $n - J$ bits and the last $J$ bits are uniformly random, where $P(J \le k) = e^{-2(n-k)t}$. For $n = 3$, starting at $000$:</p>
-<pre><code> probability of one leaf    start   sibling   cousin   other half
- t = 0.25                   0.404    0.181    0.109      0.049
- t = 0.5                    0.230    0.180    0.137      0.079
- t = 1                      0.148    0.145    0.137      0.108
- t = 2                      0.127    0.127    0.127      0.123
-</code></pre>
-<p>Siblings even out first, then cousins, and the two halves of the tree last: diffusion with a hierarchy. As a matrix, $L_T$ is the Laplacian of a graph in which every leaf is connected to every other leaf, with weight $1.75$ to the sibling, $0.75$ to each cousin and $0.25$ to each leaf in the other half (for $n = 3$). So a stage does not have to be a plain graph, weights are fine.</p>
-</blockquote>
-<h2>Fourier analysis: the frequencies of a stage</h2>
-<p>Ok, so which functions are smooth on a stage, and which are rough? This is what a Fourier transform answers. There are two ways to get there. Let us start with the one we already know from the last post.</p>
+<p>This is exactly the operator QAOA calls the <strong>mixer</strong> (usually written $B$). We now have the two ingredients in one picture: $C$ gives the values on the corners, and $A$ connects corners through single-bit flips. Next we will look at the frequencies of this graph, which make the mixer's action particularly simple.</p>
+<h2>Fourier analysis on the cube</h2>
+<p>Ok, so what is the Fourier transform on this cube? There are two ways to get there. Let us start with the one we already know from the last post.</p>
 <ol>
 <li>The Laplacian way.</li>
 </ol>
-<p>a) We already saw that for every function $f$ on the vertices</p>
+<p>a) On any graph, the graph Laplacian is $L = D - A$, where the diagonal matrix $D$ holds the degrees. We already saw that for every function $f$ on the vertices</p>
 <p>$$
 f^T L f = \sum_{\{x,y\} \in E} \big(f(x) - f(y)\big)^2 .
 $$</p>
@@ -423,28 +315,6 @@ $$</p>
   <canvas id="walsh16" role="img" aria-label="The 16 by 16 Walsh matrix for four bits, rows sorted by Hamming weight"></canvas>
   <figcaption>And here are all 16 characters for $n = 4$, one row each, sorted by $|s|$. Teal is $+1$, plum is $-1$.</figcaption>
 </figure>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> The eigenvectors of $L_T$ are just as easy to find, and they look quite different. Pick a branching point at depth $m - 1$, that is a node where bit $m$ is decided. Take the function that is $+1$ on all leaves below its $0$-branch, $-1$ on all leaves below its $1$-branch and $0$ everywhere else. Now apply an average $A_j$. If the block of the last $j$ bits is small enough to fit into one branch, our function is constant on it and survives. If the block contains the whole branching point, plus and minus cancel and we get zero. The second case happens for the $m$ largest blocks, $j \ge n - m + 1$, so</p>
-<p>$$
-L_T\,\psi = 2m\,\psi .
-$$</p>
-<p>These are the <strong>Haar wavelets</strong>, and $m$ is their level. For $n = 3$ (a dot is a zero):</p>
-<pre><code> level  node    000 001 010 011 100 101 110 111    eigenvalue of L_T
-   0     -       +   +   +   +   +   +   +   +           0
-   1    root     +   +   +   +   -   -   -   -           2
-   2     0       +   +   -   -   .   .   .   .           4
-   2     1       .   .   .   .   +   +   -   -           4
-   3     00      +   -   .   .   .   .   .   .           6
-   3     01      .   .   +   -   .   .   .   .           6
-   3     10      .   .   .   .   +   -   .   .           6
-   3     11      .   .   .   .   .   .   +   -           6
-</code></pre>
-<figure class="fig narrow">
-  <canvas id="haar16" role="img" aria-label="The 16 Haar wavelets for four bits, rows sorted by level, leaves in tree order"></canvas>
-  <figcaption>And here are all 16 wavelets for $n = 4$, one row each, sorted by level, with the leaves in tree order. Teal is $+1$, plum is $-1$, empty is $0$. Compare with the Walsh picture above.</figcaption>
-</figure>
-<p>Compare with the Walsh table. On the cube the frequency counts how many bits a wave depends on, on the tree it counts how deep the wave reaches. And the rough waves of the tree are local: half of all tree waves are differences between two siblings, all with the top frequency.</p>
-</blockquote>
 <ol start="2">
 <li>The group way.</li>
 </ol>
@@ -459,35 +329,42 @@ $$</p>
 A\,\chi_s = (n - 2|s|)\,\chi_s, \qquad \text{or in gate language} \qquad H^{\otimes n} A\, H^{\otimes n} = Z_1 + \dots + Z_n .
 $$</p>
 <p>This is just the familiar $HXH = Z$ on every qubit at once.</p>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> Here comes a small plot twist. The average $A_j$ is the average over all ways of flipping some of the last $j$ bits, and every bit flip is diagonal in the Walsh basis. So the Walsh characters are eigenvectors of $L_T$ as well! The character $\chi_s$ gets the eigenvalue $2\,\ell(s)$, where $\ell(s)$ is the position of the last 1 in $s$. For example $\chi_{100} = (-1)^{x_1}$ is exactly the root wavelet with frequency 2, while $\chi_{001}$ has the top frequency 6. The eigenspaces of the tree are big enough to hold both: the global Walsh waves and the local wavelets.</p>
-<p>In group language: bit flips are symmetries of both stages, which is why both share the characters. Their other symmetries differ. The cube may also permute the bits, so all $\chi_s$ with the same $|s|$ have to share a frequency. The tree cannot permute bits (bit 1 sits at the root, bit $n$ at the bottom), but it may swap the two branches below any single node, so all waves that reach equally deep have to share a frequency. The waves are the same, but the stage decides which of them count as smooth.</p>
-</blockquote>
 <ol start="3">
 <li>So which way is the right one? Laplacian or characters?</li>
 </ol>
 <p>On the full cube both give the same basis, but they do not carry the same information.</p>
-<p>a) The Laplacian only fixes the frequency, not the basis. All $\binom{n}{k}$ frequencies of weight $k$ share the eigenvalue $2k$, so for $n = 4$ the eigenspaces have dimensions 1, 4, 6, 4 and 1. Inside each eigenspace, any orthonormal basis is an equally good Laplacian eigenbasis. The characters are the one basis that diagonalizes every single bit flip $X_i$, not only their sum. That extra structure is what the group gives us, and it is where the fast transform $H^{\otimes n}$ and all the nice closed formulas come from. The tree is the extreme case: its eigenspaces have dimensions 1, 1, 2, 4, 8, so the Walsh waves and the wavelets both fit in.</p>
+<p>a) The Laplacian only fixes the frequency, not the basis. All $\binom{n}{k}$ frequencies of weight $k$ share the eigenvalue $2k$, so for $n = 4$ the eigenspaces have dimensions 1, 4, 6, 4 and 1. Inside each eigenspace, any orthonormal basis is an equally good Laplacian eigenbasis. The characters are the one basis that diagonalizes every single bit flip $X_i$, not only their sum. That extra structure is what the group gives us, and it is where the fast transform $H^{\otimes n}$ and all the nice closed formulas come from.</p>
 <p>b) The Laplacian works where there is no group. Constrained problems, think of independent sets, replace the cube by a graph on the feasible bitstrings (Hadfield et al., see Literature). Such graphs usually have no group structure, so no characters and in general no fast transform. But their Laplacian eigenvectors still give us smooth and rough modes.</p>
 <p>c) The standard QAOA mixer only sees the frequency level $|s|$, which is exactly the Laplacian eigenvalue. So for plain QAOA nothing is lost. Mixers with a separate angle per qubit, as in multi-angle QAOA, act on single $X_i$'s and need the characters.</p>
 <p>So I would say: the Laplacian is the more general idea and the characters are its sharpest special case. On the cube we use the characters, because they are explicit and fast. Off the cube only the Laplacian survives.</p>
 <ol start="4">
-<li>Back to the heat flow. In the Fourier basis it becomes trivial, every mode just decays with its own eigenvalue:</li>
-</ol>
-<p>$$
-\hat p_t(s) = e^{-2|s| t}\,\hat p_0(s).
-$$</p>
-<p>High frequencies die first, and for $t \to \infty$ only the constant mode survives: the uniform distribution. On the tree, a wavelet at level $m$ decays as $e^{-2mt}$. Sibling differences die fastest and the difference between the two halves of the tree survives longest, which is exactly the hierarchy from the table above.</p>
-<ol start="5">
 <li>One more thing before we go on: cost functions like MaxCut have very sparse spectra. Write $e_i$ for the bitstring with a single 1 at position $i$. Edge $(i,j)$ is cut when $x_i \neq x_j$, which is $\big(1 - \chi_{e_i \oplus e_j}(x)\big)/2$. Summing over the edges:</li>
 </ol>
 <p>$$
 C(x) = \frac{|E|}{2} - \frac{1}{2} \sum_{(i,j) \in E} \chi_{e_i \oplus e_j}(x) .
 $$</p>
 <p>So MaxCut only has Fourier weight at frequency 0 and at weight-2 frequencies, one per edge. This sparsity is the reason why QAOA's operators are local and can be implemented as short circuits.</p>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> The same formula, read with the frequencies of the tree. Edge $(i,j)$ is the wave $\chi_{e_i \oplus e_j}$, and its frequency on the tree is $2\max(i,j)$: an edge counts as smooth when both of its vertices sit close to the root. For the six-vertex prism we use below, the edges spread over the tree frequencies 4, 6, 8, 10 and 12, with an average of 8.9 out of 12. On the cube every edge sits at 4 out of 12. So MaxCut looks a lot rougher on the tree, and on the tree it even depends on how we number the vertices.</p>
-</blockquote>
+<h2>Classical diffusion: heat flow on the cube</h2>
+<ol>
+<li>Let us start with something classical. A walker sits on a corner and each of its bits flips independently at rate 1. Its probability distribution $p_t$ follows the heat equation on the cube:</li>
+</ol>
+<p>$$
+\frac{dp}{dt} = -L\,p .
+$$</p>
+<ol start="2">
+<li>In the Fourier basis this is trivial. Every mode just decays with its own eigenvalue:</li>
+</ol>
+<p>$$
+\hat p_t(s) = e^{-2|s| t}\,\hat p_0(s).
+$$</p>
+<p>High frequencies die first, and for $t \to \infty$ only the constant mode survives: the uniform distribution.</p>
+<ol start="3">
+<li>In position space the same thing factorizes over the bits. After time $t$ every bit has flipped with probability</li>
+</ol>
+<p>$$
+q_t = \frac{1 - e^{-2t}}{2},
+$$</p>
+<p>independently of the others. This is the noise operator from Boolean Fourier analysis and, if you squint a little, the mutation step of a genetic algorithm.</p>
 <h2>Quantum diffusion: the mixer</h2>
 <ol>
 <li>Now we replace the heat equation by the Schrödinger equation on the same graph:</li>
@@ -495,7 +372,7 @@ $$</p>
 <p>$$
 i\,\frac{d\psi}{d\beta} = A\,\psi, \qquad \psi_\beta = e^{-i\beta A}\,\psi_0 .
 $$</p>
-<p>This is the QAOA mixer, a continuous-time quantum walk on the cube. Since $A = nI - L$, it is the heat flow $e^{-tL}$ with the time $t$ replaced by $-i\beta$, up to a global phase. In the Fourier basis:</p>
+<p>This is the QAOA mixer, a continuous-time quantum walk on the cube. In the Fourier basis:</p>
 <p>$$
 \hat\psi_\beta(s) = e^{-i\beta(n - 2|s|)}\,\hat\psi_0(s).
 $$</p>
@@ -517,39 +394,10 @@ $$</p>
  quantum, beta = pi/2      0                 1
  classical, any t          &gt; 0.125           &lt; 0.125
 </code></pre>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> The tree mixer is $e^{-i\beta B_T}$. All the reflections $R_j$ commute, because the blocks are nested, and each of them squares to the identity. So exactly as for a single qubit,</p>
-<p>$$
-e^{-i\beta B_T} = \prod_{j=1}^{n} \big(\cos\beta\, I - i \sin\beta\, R_j\big) .
-$$</p>
-<p>In frequencies: a wavelet at level $m$ is an eigenvector of $B_T = nI - L_T$ with eigenvalue $n - 2m$, so it rotates by $e^{-i\beta(n - 2m)}$. These are the same speeds as on the cube, $n - 2|s|$. Only the groups of waves that share a speed are different: $1, 1, 2, 4$ waves for $n = 3$ instead of $1, 3, 3, 1$.</p>
-<p>As a circuit: on the last $j$ qubits, $R_j = H^{\otimes j}\,\big(2\ket{0\dots 0}\bra{0\dots 0} - I\big)\,H^{\otimes j}$. So every factor is a phase on $\ket{0 \dots 0}$, controlled by all $j$ qubits and sandwiched between Hadamards. For $j = 1$ it is the cube's $e^{-i\beta X}$ on the last qubit, for $j = n$ it is Grover's diffusion operator with a tunable angle. For $n = 3$:</p>
-<pre><code> x_1  ------------------------------------------------ H --o-- H --
-                                                           |
- x_2  ------------------------------- H --o-- H ------ H --o-- H --
-                                          |                |
- x_3  ---- exp(-i beta X) ----------- H --o-- H ------ H --o-- H --
-
-               j = 1                      j = 2            j = 3
-
- o--o: phase exp(-2 i beta) if all connected qubits are 0
-</code></pre>
-<p>In positions something new happens. Starting from one leaf, the probability to end up in the other half of the tree is at most $2^{1-n}$, for every $\beta$. The only move that crosses the root is the reflection at the uniform superposition, and just like a single Grover step it moves only a tiny amplitude to each string. For $n = 3$, starting at $000$:</p>
-<pre><code> probability of one leaf    start   sibling   cousin   other half
- quantum, beta = pi/4       0.156    0.406    0.156      0.031
- quantum, beta = pi/2       0.063    0.563    0.063      0.063
- classical, t = 2           0.127    0.127    0.127      0.123
-</code></pre>
-<p>Classically, the tree walker reaches the other half without trouble. Quantum mechanically, it almost never does. On the cube it was the other way around: the quantum walk reached the opposite corner with certainty, the classical one never had more than $2^{-n}$ there. So quantum does not mean faster everywhere. The stage decides.</p>
-</blockquote>
-<p>You can play with this yourself. Click a corner or a leaf to start the walk there, then switch between the classical heat flow and the quantum mixer, and between the cube and the tree.</p>
+<p>You can play with this yourself. Click a corner to start the walk there, then switch between the classical heat flow and the quantum mixer.</p>
 <div class="toy" id="labA">
-  <div class="toy-head"><span class="toy-title"><strong>Toy 1.</strong> Diffusion on $Q_3$ and on the tree, classical versus quantum</span></div>
+  <div class="toy-head"><strong>Toy 1.</strong> Diffusion on $Q_3$, classical versus quantum</div>
   <div class="controls">
-    <div class="seg" role="group" aria-label="Stage">
-      <button type="button" id="stageCube" aria-pressed="true">Cube</button>
-      <button type="button" id="stageTree" aria-pressed="false">Tree</button>
-    </div>
     <div class="seg" role="group" aria-label="Kind of diffusion">
       <button type="button" id="modeC" aria-pressed="true">Classical heat flow</button>
       <button type="button" id="modeQ" aria-pressed="false">Quantum mixer</button>
@@ -563,7 +411,7 @@ $$</p>
   </div>
   <div class="two">
     <div>
-      <div class="panel-label" id="posLabel">Positions: corners</div>
+      <div class="panel-label">Positions: corners</div>
       <svg class="plot" id="cubeSvg" viewBox="0 0 400 300" role="img" aria-label="Three-dimensional Hamming cube with probabilities on its corners"></svg>
     </div>
     <div>
@@ -573,9 +421,9 @@ $$</p>
     </div>
   </div>
   <div class="readouts">
-    <div class="ro"><span class="k" id="roK1">Per-bit flip probability</span><span class="val" id="roFlip"></span></div>
-    <div class="ro"><span class="k" id="roK2">P(start corner)</span><span class="val" id="roStart"></span></div>
-    <div class="ro"><span class="k" id="roK3">P(opposite corner)</span><span class="val" id="roOpp"></span></div>
+    <div class="ro"><span class="k">Per-bit flip probability</span><span class="val" id="roFlip"></span></div>
+    <div class="ro"><span class="k">P(start corner)</span><span class="val" id="roStart"></span></div>
+    <div class="ro"><span class="k">P(opposite corner)</span><span class="val" id="roOpp"></span></div>
   </div>
   <p class="caption" id="cubeColorNote"></p>
 </div>
@@ -627,11 +475,8 @@ $$</p>
 </figure>
 <p>e) Other vectors in the same eigenspace contain zeros and round ambiguously. That is the same degeneracy we saw on the cube, where the characters had to pick a basis for us.</p>
 <ol start="4">
-<li>So QAOA alternates between two Laplacians. The mixer is generated by the Laplacian of the stage, here the cube, a graph on $2^n$ corners, and plays the kinetic term. The cost is the quadratic form of the problem graph's Laplacian, a graph on $n$ vertices, and plays the potential.</li>
+<li>So QAOA alternates between two Laplacians. The mixer is generated by the Laplacian of the cube, a graph on $2^n$ corners, and plays the kinetic term. The cost is the quadratic form of the problem graph's Laplacian, a graph on $n$ vertices, and plays the potential.</li>
 </ol>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> Nothing changes in this section, and that is the point. The cost layer is diagonal in the bitstrings and does not know about edges at all. Swapping the stage only swaps the mixer. The problem graph and its Laplacian $L_G$ also stay as they are: the problem graph belongs to the problem, the stage belongs to the algorithm. Even the start state stays, because $\ket{+}^{\otimes n}$ is the constant wave, frequency 0, on the tree as well.</p>
-</blockquote>
 <h2>QAOA is a split-step Fourier method</h2>
 <ol>
 <li>The depth-$p$ QAOA state is</li>
@@ -662,10 +507,7 @@ $$</p>
 <p>a) With many layers and small angles, QAOA is a Trotter discretization of continuous evolution under $a(t)\,A + b(t)\,C$. Adiabatic optimization and quantum-walk search are just special schedules of this one equation.</p>
 <p>b) A classical simulation costs $O(p\,n\,2^n)$ with the fast Walsh-Hadamard transform.</p>
 <p>c) At depth 1 the mixer cannot change Fourier magnitudes, only phases. Whatever frequency content the cost layer creates is all the mixer has to work with.</p>
-<p>d) The recipe only needs a mixer that walks on some graph: transform with that graph's Laplacian eigenvectors, apply the kinetic phase, transform back. On the full cube that transform is the fast Walsh-Hadamard transform. Constrained mixers keep the split-step structure, but in general lose the fast transform. We will collect a few more stages at the end.</p>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> The same four steps. Thanks to the plot twist we may even keep $H^{\otimes n}$ as the transform and only change the phase table in step 3: mode $s$ is rotated by $e^{-i\beta(n - 2\ell(s))}$ instead of $e^{-i\beta(n - 2|s|)}$, with $\ell(s)$ the position of the last 1 in $s$. On qubits, QAOA on the tree is the cube's circuit with a different diagonal in the middle. If you prefer the tree's own waves, use the Haar transform instead, which also has fast classical and quantum circuits (Fijany and Williams, see Literature). Either way: same split-step method, different frequencies.</p>
-</blockquote>
+<p>d) The recipe only needs a mixer that walks on some graph: transform with that graph's Laplacian eigenvectors, apply the kinetic phase, transform back. On the full cube that transform is the fast Walsh-Hadamard transform. Constrained mixers keep the split-step structure, but in general lose the fast transform.</p>
 <h2>Depth 1 on a six-vertex prism</h2>
 <ol>
 <li>
@@ -679,40 +521,17 @@ $$</p>
  expected cut &lt;C&gt;          5.94     (random: 4.50, maximum: 7)
  approximation ratio       0.85
  P(maximum cut)            0.40     (6 of the 64 strings are maximum cuts)
- most likely string        101010, a maximum cut (tied with the other five)
+ most likely string        101010, a maximum cut
 
  Walsh weight by |s|       |s| = 0: 0.495   2: 0.409   4: 0.091   6: 0.005
 </code></pre>
 <ol start="3">
 <li>Interesting detail: only even frequencies show up. MaxCut does not change if we flip all bits, so the odd frequencies never get any weight.</li>
 </ol>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> Same prism, same cost, but the tree mixer, with vertex $i$ deciding at depth $i$. The landscape now has to be scanned for $\beta \in [0, \pi]$:</p>
-<pre><code> best angles               gamma = 0.518 (0.165 pi),  beta = 0.155 (0.049 pi)
- expected cut &lt;C&gt;          5.63     (cube: 5.94)
- approximation ratio       0.80     (cube: 0.85)
- P(maximum cut)            0.30     (cube: 0.40)
- most likely string        001110, a maximum cut
-
- weight by tree level      0: 0.559   2: 0.036   3: 0.072   4: 0.054   5: 0.107   6: 0.172
-</code></pre>
-<p>Worse than the cube, and with more layers the gap grows. Tuning all angles for the best expected cut:</p>
-<pre><code> P(maximum cut)    p = 1    p = 2    p = 3
- cube              0.401    0.721    0.923
- tree              0.300    0.481    0.656
-</code></pre>
-<p>Three things are different on the tree. First, the edges of the prism live on five different tree frequencies, so one $\beta$ cannot treat them alike, while on the cube they all rotate together. Second, the order of the vertices now matters: vertex 1 at the root is a big decision, vertex 6 at the bottom a small one. For MaxCut this hierarchy is made up, the problem has no preferred vertex. I tried all 720 orders: at depth 1 the best expected cut ranges from 5.58 to 5.65. So here the order is a small effect, but on the cube it does not exist at all. Third, and I like this one: on the cube the six maximum cuts come out exactly equally likely, $0.067$ each, because the cube treats all vertices alike. On the tree they split into three pairs (a cut and its mirror image) with $0.0507$, $0.0506$ and $0.0485$. The stage has broken the symmetry of the prism.</p>
-</blockquote>
-<p>Again, you can play with it. Click or drag on the landscape to pick $(\gamma, \beta)$, or press the button to jump to the best point. The stage switch puts the tree mixer on the same prism.</p>
+<p>Again, you can play with it. Click or drag on the landscape to pick $(\gamma, \beta)$, or press the button to jump to the best point.</p>
 <div class="toy" id="labB">
-  <div class="toy-head"><span class="toy-title"><strong>Toy 2.</strong> The depth-1 landscape $\langle C \rangle(\gamma, \beta)$ on the prism</span>
+  <div class="toy-head"><strong>Toy 2.</strong> The depth-1 landscape $\langle C \rangle(\gamma, \beta)$ on the prism
     <span class="heat-legend"><span id="heatMin"></span><span class="ramp" aria-hidden="true"></span><span id="heatMax"></span></span>
-  </div>
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Stage of the mixer">
-      <button type="button" id="landCube" aria-pressed="true">Cube mixer</button>
-      <button type="button" id="landTree" aria-pressed="false">Tree mixer</button>
-    </div>
   </div>
   <canvas id="heat" tabindex="0" role="img" aria-label="Heatmap of the expected cut size over gamma and beta. Use the sliders below to choose a point."></canvas>
   <div class="controls">
@@ -738,122 +557,12 @@ $$</p>
       <p class="caption">Bars: after QAOA. Dashed outlines: a uniformly random string.</p>
     </div>
     <div>
-      <div class="panel-label" id="specLabel">Walsh weight by |s|</div>
+      <div class="panel-label">Walsh weight by $|s|$</div>
       <svg class="plot" id="specSvg" viewBox="0 0 220 170" role="img" aria-label="Fourier weight of the state grouped by Hamming weight of the frequency"></svg>
       <p class="caption">Move only $\beta$ and these bars stay put.</p>
     </div>
   </div>
 </div>
-<h2>Swapping the stage</h2>
-<p>Ok, time to zoom out. Here is the recipe we have now used twice:</p>
-<ol>
-<li>The recipe.</li>
-</ol>
-<p>a) Pick a <strong>stage</strong>: a graph whose vertices are the candidate solutions and whose edges are the small moves. Weights are allowed.</p>
-<p>b) Its Laplacian $L$ generates diffusion, $e^{-tL}$.</p>
-<p>c) The eigenvectors of $L$ are the waves of the stage and the eigenvalues are their frequencies. Changing into the basis of waves is the stage's Fourier transform.</p>
-<p>d) The mixer is the quantum diffusion $e^{-i\beta B}$, where $B$ sums up the moves. For a regular stage $B = dI - L$, so every wave just rotates with its own frequency.</p>
-<p>e) The start state is the lowest wave, the uniform superposition over the stage.</p>
-<p>f) The cost layer stays exactly the same.</p>
-<ol start="2">
-<li>What we have to check when we swap.</li>
-</ol>
-<p>a) Can a quantum computer run the mixer? The cube needs one rotation per qubit, the tree one multi-controlled phase per level. For a random graph on $2^n$ vertices there is no short circuit.</p>
-<p>b) Can we prepare the start state? Easy for a stage that uses all $2^n$ bitstrings, much harder when it only contains some of them.</p>
-<p>c) Does the stage fit the problem? Roughly: good solutions should be a few small moves away from other good solutions. For MaxCut on the cube all edges even sit at the same frequency. As we saw on the tree, this is not something we get for free.</p>
-<ol start="3">
-<li>A small zoo. These are the stages I know of, together with their waves:</li>
-</ol>
-<div class="tablewrap"><table>
-<thead>
-<tr>
-<th>Stage</th>
-<th>Small move</th>
-<th>Waves</th>
-<th>Mixer circuit</th>
-<th>Where it shows up</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Hamming cube $Q_n$</td>
-<td>flip one bit</td>
-<td>Walsh characters, $H^{\otimes n}$</td>
-<td>$e^{-i\beta X}$ on every qubit</td>
-<td>standard QAOA</td>
-</tr>
-<tr>
-<td>Binary tree</td>
-<td>redraw the last $j$ bits</td>
-<td>Haar wavelets (or Walsh, with other frequencies)</td>
-<td>nested Grover reflections</td>
-<td>this post; quantum walks on decision and backtracking trees</td>
-</tr>
-<tr>
-<td>Ring $\mathbb{Z}_{2^n}$</td>
-<td>add or subtract 1</td>
-<td>sines and cosines, the QFT</td>
-<td>QFT, phases, inverse QFT</td>
-<td>quantum walk optimisation (Marsh and Wang)</td>
-</tr>
-<tr>
-<td>Complete graph</td>
-<td>jump anywhere</td>
-<td>constant plus everything else</td>
-<td>one Grover reflection</td>
-<td>Grover mixers (Bärtschi and Eidenbenz)</td>
-</tr>
-<tr>
-<td>Hamming-weight slice</td>
-<td>swap a 0 and a 1</td>
-<td>slice harmonics (Filmus)</td>
-<td>XY gates</td>
-<td>constraints like &quot;exactly $k$ ones&quot; (Hadfield et al., Wang et al.)</td>
-</tr>
-<tr>
-<td>Colorings $\{1,\dots,q\}^n$</td>
-<td>recolor one vertex</td>
-<td>$q$-point Fourier transform on every vertex</td>
-<td>one qudit mixer per vertex</td>
-<td>graph coloring, Max-$k$-Cut</td>
-</tr>
-<tr>
-<td>Permutations $S_n$</td>
-<td>swap two positions</td>
-<td>Fourier transform on $S_n$ (Young diagrams)</td>
-<td>swap networks</td>
-<td>traveling salesperson, scheduling</td>
-</tr>
-</tbody>
-</table></div>
-<p>a) The ring is the nicest one to look at. Line up the 64 bitstrings as the numbers $v = 0, \dots, 63$, with $x_1$ as the most significant bit, and connect $v$ with $v \pm 1$ (and 63 with 0). The ring is the group $\mathbb{Z}_{64}$ instead of $\mathbb{Z}_2^6$, so its characters are the good old $e^{2\pi i k v/64}$ and the transform is the ordinary DFT, on qubits the QFT. Here even the transform changed. QAOA on the ring is the split-step Fourier method for a particle hopping around a circle, which is as close to the textbook as it gets: the frequency of the wave $k$ is $2 - 2\cos(2\pi k/64)$, the lattice version of $k^2$.</p>
-<p>b) The complete graph is the other extreme. It has only two frequencies: 0 for the constant wave and one shared frequency for everything else. Its mixer only sees how much amplitude sits on each cost value, never which strings are close to each other.</p>
-<p>c) The slice keeps only the bitstrings with exactly $k$ ones. Constraints like that come for free, the stage simply does not contain anything else. The price is the start state: the uniform superposition over the slice is a Dicke state, which needs its own circuit.</p>
-<ol start="4">
-<li>So which stage is best? Let us put four of them on two problems. The first one is MaxCut on the prism. For the second one, read the bitstring as a binary number $v$, again with $x_1$ as the most significant bit, and ask for $v$ to be as close as possible to 41:</li>
-</ol>
-<p>$$
-C(x) = -\,|v(x) - 41| .
-$$</p>
-<p>Yes, the answer is $101001$. It is a toy, but its landscape has a single peak on the number line. For both problems I tuned the angles of depth 1 and depth 2 for the best $\langle C \rangle$, with every angle between $0$ and $2\pi$ and many random starts:</p>
-<pre><code> MaxCut on the prism                    p = 1          p = 2
- (expected cut, P(maximum cut))
- cube                                   5.94, 0.40     6.60, 0.72
- tree                                   5.63, 0.30     6.21, 0.48
- ring                                   5.33, 0.27     5.60, 0.34
- complete graph                         5.59, 0.27     6.23, 0.42
- slice with three ones                  6.44, 0.76     7.00, 1.00
-
- Number close to 41                     p = 1          p = 2
- (expected |v - 41|, uniform: 17.4)
- cube                                   9.5            6.0
- tree                                   9.0            4.7
- ring                                   9.6            5.7
- complete graph                         8.7            5.4
-</code></pre>
-<p>a) MaxCut likes the cube. The ring is bad here: neighbors on the ring like $31 = 011111$ and $32 = 100000$ can be completely different cuts. The slice wins, but it cheats a little, because we used that every maximum cut of the prism has three vertices on each side.</p>
-<p>b) The number likes the tree. Its small moves only touch the last bits, which change $v$ only a little, while on the cube even a single flip of $x_1$ jumps by 32. And the ring, where every small move changes $v$ by exactly one? It has the right idea but a slow walk: the frequencies of its smooth waves are tiny, $2 - 2\cos(2\pi/64) \approx 0.01$ for the smoothest one, so it needs very long walks. If we let $\beta$ go up to about 60, it gets to 7.0 and 4.1 and beats everything else in the table. On the cube that would make no difference at all, because the cube's mixer repeats after $\beta = \pi$.</p>
-<p>c) With only 64 strings none of these numbers are benchmarks, and for deeper circuits the landscapes get so rugged that I would not trust my optimizer anymore. The numbers are only here to show that the stage is a real design choice. No stage wins everything.</p>
 <h2>Rotate time and you get a genetic algorithm</h2>
 <ol>
 <li>
@@ -866,103 +575,65 @@ $$</p>
 <p>QAOA is the real-time version of the same alternation. It cannot damp anything, because every step is unitary. It can only steer phases so that amplitudes interfere constructively on good corners. That is why its angles have to be tuned, why its landscape oscillates the way it does, and why an advantage over the classical cousin is something we have to show problem by problem instead of just assuming it.</p>
 </li>
 </ol>
-<blockquote class="stage">
-<p><strong>On the tree.</strong> In imaginary time, the tree mixer becomes the tree's heat flow $e^{-tL_T}$: keep the first decisions and throw dice for a random number of the last ones. With selection on top, this is a genetic algorithm whose mutation redraws whole tails of the string, a bit like the random rollouts of Monte Carlo tree search. Every stage comes with its own classical cousin.</p>
-</blockquote>
 <h2>The dictionary</h2>
 <div class="tablewrap"><table>
 <thead>
 <tr>
 <th>Object</th>
-<th>Any stage</th>
-<th>Cube $Q_n$</th>
-<th>Tree</th>
+<th>Positions (bitstrings $x$)</th>
+<th>Frequencies (Walsh modes $s$)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Small move</td>
-<td>an edge of the stage</td>
-<td>flip bit $i$, $X_i$</td>
-<td>redraw the last $j$ bits, $A_j$</td>
+<td>Cube adjacency $A = \sum_i X_i$</td>
+<td>sum over single-bit flips</td>
+<td>multiplication by $n - 2\lvert s\rvert$</td>
 </tr>
 <tr>
-<td>Sum of moves (mixer generator)</td>
-<td>$B$</td>
-<td>$A = \sum_i X_i$</td>
-<td>$B_T = \sum_j R_j$ with $R_j = 2A_j - I$</td>
+<td>Cube Laplacian $L = nI - A$</td>
+<td>$n$ times the amplitude minus the sum over single-bit flips</td>
+<td>multiplication by $2\lvert s\rvert$ (fixes the level, the characters fix the basis)</td>
 </tr>
 <tr>
-<td>Laplacian, generator of diffusion</td>
-<td>$L = D - B$</td>
-<td>$nI - A$</td>
-<td>$nI - B_T = 2\sum_j (I - A_j)$</td>
-</tr>
-<tr>
-<td>Waves</td>
-<td>eigenvectors of $L$</td>
-<td>Walsh characters $\chi_s$</td>
-<td>Haar wavelets, or $\chi_s$</td>
-</tr>
-<tr>
-<td>Frequency</td>
-<td>eigenvalue of $L$</td>
-<td>$2\lvert s\rvert$: how many bits</td>
-<td>$2m$, or $2\ell(s)$: how deep</td>
-</tr>
-<tr>
-<td>Transform</td>
-<td>change into the waves</td>
-<td>$H^{\otimes n}$</td>
-<td>Haar transform, or $H^{\otimes n}$</td>
-</tr>
-<tr>
-<td>Heat flow $e^{-tL}$</td>
-<td>wave with frequency $\lambda$ decays by $e^{-\lambda t}$</td>
-<td>every bit flips with probability $(1 - e^{-2t})/2$</td>
-<td>keep a prefix, redraw a random tail</td>
-</tr>
-<tr>
-<td>Mixer $e^{-i\beta B}$</td>
-<td>waves rotate with their frequencies</td>
-<td>$\cos\beta - i\sin\beta\, X_i$ per qubit</td>
-<td>$\cos\beta - i\sin\beta\, R_j$ per block</td>
-</tr>
-<tr>
-<td>Start state</td>
-<td>the constant wave</td>
-<td>$\ket{+}^{\otimes n}$</td>
-<td>$\ket{+}^{\otimes n}$</td>
-</tr>
-<tr>
-<td>Cost layer $e^{-i\gamma C}$</td>
-<td>phase kick $e^{-i\gamma C(x)}$, the same on every stage</td>
-<td>same</td>
-<td>same</td>
+<td>MaxCut cost $C$</td>
+<td>multiplication by $C(x)$</td>
+<td>sparse: weight 0 and one weight-2 mode per edge</td>
 </tr>
 <tr>
 <td>Problem-graph Laplacian $L_G$</td>
-<td>$C(x) = \tfrac{1}{4} z^T L_G z$ with $z_i = (-1)^{x_i}$, part of the problem</td>
-<td>same</td>
-<td>same</td>
+<td>$C(x) = \tfrac{1}{4} z^T L_G z$ with $z_i = (-1)^{x_i}$</td>
+<td>off-diagonal entries are the weight-2 coefficients of $C$, up to a factor</td>
 </tr>
 <tr>
-<td>MaxCut spectrum</td>
-<td>where the cost sits in frequency</td>
-<td>weight 0 and one weight-2 mode per edge</td>
-<td>edge $(i,j)$ at frequency $2\max(i,j)$</td>
+<td>Constrained mixer</td>
+<td>hops along the allowed moves of a graph on feasible strings</td>
+<td>diagonal in that graph's Laplacian eigenbasis, no characters</td>
 </tr>
 <tr>
-<td>Classical cousin</td>
-<td>mutation and selection</td>
-<td>bit-flip mutation</td>
-<td>redraw tails, like rollouts</td>
+<td>Heat flow $e^{-tL}$</td>
+<td>every bit flips with probability $(1 - e^{-2t})/2$</td>
+<td>mode $s$ decays by $e^{-2\lvert s\rvert t}$</td>
+</tr>
+<tr>
+<td>Mixer $e^{-i\beta A}$</td>
+<td>$\cos\beta$ to stay, $-i\sin\beta$ to flip, per bit</td>
+<td>mode $s$ rotates by $e^{-i\beta(n - 2\lvert s\rvert)}$</td>
+</tr>
+<tr>
+<td>Cost layer $e^{-i\gamma C}$</td>
+<td>phase kick $e^{-i\gamma C(x)}$</td>
+<td>spreads weight according to the spectrum of the phase pattern</td>
+</tr>
+<tr>
+<td>Initial state $\ket{+}^{\otimes n}$</td>
+<td>uniform over all corners</td>
+<td>the single mode $s = 0$</td>
 </tr>
 <tr>
 <td>One QAOA layer</td>
-<td>phase in positions, transform, phase in frequencies, transform back</td>
-<td>phases $n - 2\lvert s\rvert$</td>
-<td>phases $n - 2\ell(s)$</td>
+<td>phase in positions, transform</td>
+<td>phase in frequencies, transform back</td>
 </tr>
 </tbody>
 </table></div>
@@ -993,19 +664,12 @@ $$</p>
 <li><a href="https://arxiv.org/abs/2403.15540">Depth scaling of unstructured search via quantum approximate optimization</a> (2024). QAOA sequences from Trotterizing a continuous-time quantum walk.</li>
 <li><a href="https://arxiv.org/abs/2308.05418">Guided quantum walk</a> (2023). Steering the hypercube walk with the spectrum of the problem Hamiltonian instead of variational angles.</li>
 </ul>
-<p>Other stages:</p>
+<p>Landscapes:</p>
 <ul>
-<li>A. T. Ogielski, D. L. Stein, <a href="https://doi.org/10.1103/PhysRevLett.55.1634">Dynamics on ultrametric spaces</a> (1985). Diffusion on the leaves of a tree, the heat flow of our second stage.</li>
-<li>A. Yu. Khrennikov, S. V. Kozyrev, <a href="https://arxiv.org/abs/math-ph/0412062">Pseudodifferential operators on ultrametric spaces and ultrametric wavelets</a> (2005). Wavelets diagonalize this kind of diffusion, which is our Haar table.</li>
-<li>M. Gavish, B. Nadler, R. R. Coifman, <a href="https://icml.cc/imls/conferences/2010/papers/137.pdf">Multiscale wavelets on trees, graphs and high dimensional data</a> (2010). Haar-like bases on trees, and smoothness on a tree as fast decay of the wavelet coefficients.</li>
-<li>A. Fijany, C. P. Williams, <a href="https://arxiv.org/abs/quant-ph/9809004">Quantum Wavelet Transforms: Fast Algorithms and Complete Circuits</a> (1998). Circuits for the Haar transform.</li>
-<li>E. Farhi, S. Gutmann, <a href="https://arxiv.org/abs/quant-ph/9706062">Quantum computation and decision trees</a> (1998), and A. Montanaro, <a href="https://arxiv.org/abs/1509.02374">Quantum walk speedup of backtracking algorithms</a> (2015). Quantum walks on trees whose inner nodes are partial solutions.</li>
-<li>A. Bärtschi, S. Eidenbenz, <a href="https://arxiv.org/abs/2006.00354">Grover Mixers for QAOA: Shifting Complexity from Mixer Design to State Preparation</a> (2020). The complete graph as the stage.</li>
-<li>Z. Wang, N. C. Rubin, J. M. Dominy, E. G. Rieffel, <a href="https://arxiv.org/abs/1904.09314">XY mixers: analytical and numerical results for the quantum alternating operator ansatz</a> (2020). Mixers on the Hamming-weight slice and on one-hot encodings.</li>
-<li>Y. Filmus, <a href="https://arxiv.org/abs/1406.0142">An orthogonal basis for functions over a slice of the Boolean hypercube</a> (2016). The waves of the slice.</li>
-<li>P. Diaconis, <a href="https://doi.org/10.1214/lnms/1215467407">Group Representations in Probability and Statistics</a> (1988). Random walks on groups, including permutations, analyzed with their Fourier transform.</li>
+<li>L. Zhou, S.-T. Wang, S. Choi, H. Pichler, M. D. Lukin, <a href="https://arxiv.org/abs/1812.01041">QAOA: Performance, Mechanism, and Implementation on Near-Term Devices</a> (2018). Careful: their &quot;FOURIER&quot; heuristic is a Fourier series over the layer index of the angles, a different Fourier transform than the one on the cube.</li>
+<li><a href="https://arxiv.org/abs/2305.13594">Connecting the Hamiltonian structure to the QAOA energy and Fourier landscape structure</a> (2023). The landscape as a Fourier series in the angles, which explains its periodicity.</li>
 </ul>
-<p>I could not find a single reference that presents QAOA explicitly as a split-step Fourier method on the cube, or the imaginary-time mutation-selection picture, or the two-Laplacian reading. The tree stage I built for this post out of the standard pieces above. So better check all of this against the sources before citing.</p>
+<p>I could not find a single reference that presents QAOA explicitly as a split-step Fourier method on the cube, or the imaginary-time mutation-selection picture, or the two-Laplacian reading. I put these together from the standard facts above, so better check them against the sources before citing.</p>
 
 <footer>
   <div class="dashes" aria-hidden="true">----------------------------------------------------------------------------------------------------</div>
@@ -1195,39 +859,6 @@ $$</p>
     });
   }
 
-  /* ---------- the second stage: Haar wavelets on the tree ---------- */
-  // Strings are integers with x_1 in bit 0. On the tree x_1 is decided at the root, so the leaf at
-  // position k from the left is the string whose bits are the bits of k read backwards.
-  const reverseBits = (k, n) => { let x = 0; for (let i = 0; i < n; i++) x |= ((k >> (n - 1 - i)) & 1) << i; return x; };
-  // A wavelet is a branching point: its level m and the prefix p = x_1 ... x_{m-1} leading to it.
-  // It is +1 below the 0-branch, -1 below the 1-branch and 0 elsewhere. Level 0 is the constant.
-  const waveAt = ([m, p], x) => {
-    if (m === 0) return 1;
-    if ((x & ((1 << (m - 1)) - 1)) !== p) return 0;
-    return (x >> (m - 1)) & 1 ? -1 : 1;
-  };
-  const waveletsOf = (n) => {
-    const w = [[0, 0]];
-    for (let m = 1; m <= n; m++) for (let k = 0; k < 1 << (m - 1); k++) w.push([m, reverseBits(k, m - 1)]);
-    return w;
-  };
-  const haar16 = document.getElementById('haar16');
-  function drawHaar16() {
-    if (!haar16) return;
-    const { ctx, w } = fitCanvas(haar16);
-    const n = 4, N = 16;
-    const gap = Math.max(1, w / 200), cell = (w - gap * (N - 1)) / N;
-    const pos = cssVar('--pos'), neg = cssVar('--neg'), zero = cssVar('--code-bg');
-    ctx.clearRect(0, 0, w, w);
-    waveletsOf(n).forEach((wave, r) => {
-      for (let k = 0; k < N; k++) {
-        const v = waveAt(wave, reverseBits(k, n));
-        ctx.fillStyle = v > 0 ? pos : v < 0 ? neg : zero;
-        ctx.fillRect(k * (cell + gap), r * (cell + gap), cell, cell);
-      }
-    });
-  }
-
   /* ---------- part 2: 8x8 Walsh grid ---------- */
   (function buildWalsh8() {
     const g = document.getElementById('walsh8');
@@ -1247,8 +878,8 @@ $$</p>
     });
   })();
 
-  /* ---------- part 4: diffusion lab on the cube and on the tree ---------- */
-  const A = { n: 3, stage: 'cube', mode: 'classical', u: 0.25, start: 0, playing: false };
+  /* ---------- part 4: cube diffusion lab ---------- */
+  const A = { n: 3, mode: 'classical', u: 0.25, start: 0, playing: false };
   const cubeSvg = document.getElementById('cubeSvg');
   const modeSvg = document.getElementById('modeSvg');
   const cubeTime = document.getElementById('cubeTime');
@@ -1286,39 +917,9 @@ $$</p>
     for (let s = 0; s < 8; s++) cphase[s] = -b * (n - 2 * pc(s)) + (pc(s & start) % 2 ? Math.PI : 0);
     return { P, phase, cphase, flip, param: b };
   }
-  // The tree: tree distance is n minus the length of the common prefix x_1 x_2 ...
-  const treeDist = (x, y, n) => { for (let i = 0; i < n; i++) if (((x ^ y) >> i) & 1) return n - i; return 0; };
-  const treeWaves = waveletsOf(3);
-  const treeWaveX = [39, 103, 167, 213, 271, 317, 363, 409];
-  const leafX = (k) => 42.5 + 45 * k;
-  function treeState() {
-    const { n, mode, u, start } = A;
-    const P = new Array(8).fill(0), phase = new Array(8).fill(0);
-    const at = treeWaves.map((w) => waveAt(w, start));
-    if (mode === 'classical') {
-      const t = 1.5 * u;
-      // J is the highest clock that rang, P(J <= k) = exp(-2 (n - k) t); then the last J bits are uniform.
-      const PJ = [Math.exp(-2 * n * t)];
-      for (let k = 1; k <= n; k++) PJ.push(Math.exp(-2 * (n - k) * t) - Math.exp(-2 * (n - k + 1) * t));
-      for (let x = 0; x < 8; x++) for (let k = treeDist(start, x, n); k <= n; k++) P[x] += PJ[k] / (1 << k);
-      return { P, coef: at.map((v, i) => v * Math.exp(-2 * treeWaves[i][0] * t)), param: t };
-    }
-    const b = (Math.PI / 2) * u;
-    // exp(-i b B_T) = e^{i n b} I + sum_k (-2 i sin b) e^{i b (n - 2k + 1)} A_k, where A_k spreads 2^-k over a block.
-    for (let x = 0; x < 8; x++) {
-      const d = treeDist(start, x, n);
-      let re = d === 0 ? Math.cos(n * b) : 0, im = d === 0 ? Math.sin(n * b) : 0;
-      for (let k = Math.max(d, 1); k <= n; k++) {
-        const ang = b * (n - 2 * k + 1), w = -2 * Math.sin(b) / (1 << k);
-        re -= w * Math.sin(ang); im += w * Math.cos(ang);
-      }
-      P[x] = re * re + im * im;
-      phase[x] = Math.atan2(im, re);
-    }
-    const cphase = treeWaves.map(([m], i) => -b * (n - 2 * m) + (at[i] < 0 ? Math.PI : 0));
-    return { P, phase, at, cphase, param: b };
-  }
-  function drawCubePanels(st, q) {
+  function drawCube() {
+    const st = cubeState();
+    const q = A.mode === 'quantum';
     cubeSvg.textContent = '';
     for (let x = 0; x < 8; x++) for (let i = 0; i < 3; i++) {
       const y = x ^ (1 << i);
@@ -1361,100 +962,20 @@ $$</p>
       }
       txt(modeSvg, cx, 186, bitstr(s, 3), 'lbl');
     });
-  }
-  function drawTreePanels(st, q) {
-    cubeSvg.textContent = '';
-    const ys = [34, 88, 142, 196], l1 = [110, 290], l2 = [65, 155, 245, 335];
-    l1.forEach((x) => el('line', { x1: 200, y1: ys[0], x2: x, y2: ys[1], class: 'edge' }, cubeSvg));
-    l2.forEach((x, i) => el('line', { x1: l1[i >> 1], y1: ys[1], x2: x, y2: ys[2], class: 'edge' }, cubeSvg));
-    for (let k = 0; k < 8; k++) el('line', { x1: l2[k >> 1], y1: ys[2], x2: leafX(k), y2: ys[3], class: 'edge' }, cubeSvg);
-    [[200, ys[0]], ...l1.map((x) => [x, ys[1]]), ...l2.map((x) => [x, ys[2]])].forEach(([cx, cy]) => el('circle', { cx, cy, r: 3.5, class: 'tnode' }, cubeSvg));
-    ['x₁', 'x₂', 'x₃'].forEach((s, i) => txt(cubeSvg, 4, (ys[i] + ys[i + 1]) / 2 + 4, s, 'lbl', 'start'));
-    // leaves from left to right, so that Tab walks along the tree
-    for (let k = 0; k < 8; k++) {
-      const x = reverseBits(k, 3), cx = leafX(k), cy = ys[3];
-      const r = 4 + 17 * Math.sqrt(st.P[x]);
-      if (x === A.start) el('circle', { cx, cy, r: r + 4, class: 'startring' }, cubeSvg);
-      const c = el('circle', { cx, cy, r, class: 'vtx', tabindex: 0, role: 'button', 'aria-label': `Start at ${bitstr(x, 3)}` }, cubeSvg);
-      c.style.fill = q && st.P[x] > 1e-12 ? phaseFill(st.phase[x]) : 'var(--pos)';
-      c.addEventListener('click', () => { A.start = x; renderA(); });
-      c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); A.start = x; renderA(); } });
-      txt(cubeSvg, cx, 240, bitstr(x, 3), 'lbl-ink');
-      txt(cubeSvg, cx, 257, st.P[x].toFixed(3), 'lbl');
-    }
-    // mode panel: the eight Haar wavelets, grouped by level; the speeds n - 2m match the cube's n - 2|s|
-    modeSvg.textContent = '';
-    const base = 108;
-    [['level 0', 39], ['level 1', 103], ['level 2', 190], ['level 3', 340]].forEach(([label, xs], m) => {
-      txt(modeSvg, xs, 16, label, 'lbl-ink');
-      txt(modeSvg, xs, 32, `λ = ${3 - 2 * m > 0 ? '+' : ''}${3 - 2 * m}`, 'lbl');
-    });
-    if (!q) el('line', { x1: 8, x2: 422, y1: base, y2: base, class: 'base' }, modeSvg);
-    treeWaves.forEach(([m, p], i) => {
-      const cx = treeWaveX[i];
-      if (!q) {
-        const v = st.coef[i], h = 58 * Math.abs(v);
-        el('rect', { x: cx - 13, y: v >= 0 ? base - h : base, width: 26, height: Math.max(h, 0.5), class: v >= 0 ? 'bar-p' : 'bar-n' }, modeSvg);
-      } else {
-        const R = 18;
-        el('circle', { cx, cy: base, r: R, class: 'dial' }, modeSvg);
-        if (st.at[i] !== 0) {
-          const ph = st.cphase[i], x2 = cx + R * Math.cos(ph), y2 = base - R * Math.sin(ph);
-          const ln = el('line', { x1: cx, y1: base, x2, y2, 'stroke-width': 2.6, 'stroke-linecap': 'round' }, modeSvg);
-          ln.style.stroke = phaseFill(ph);
-          const dot = el('circle', { cx: x2, cy: y2, r: 3.2 }, modeSvg);
-          dot.style.fill = phaseFill(ph);
-        }
-      }
-      txt(modeSvg, cx, 186, m === 0 ? 'const' : m === 1 ? 'root' : bitstr(p, m - 1), 'lbl');
-    });
-  }
-  const LAB_TEXT = {
-    cube: {
-      pos: 'Positions: corners', modes: 'Frequencies: Walsh modes',
-      posAria: 'Three-dimensional Hamming cube with probabilities on its corners', modesAria: 'Walsh mode coefficients of the current state',
-      k: ['Per-bit flip probability', 'P(start corner)', 'P(opposite corner)'],
-      quantum: ['Each dial is one Walsh mode of the amplitude. Its length never changes; it rotates at speed n − 2|s|, so modes of different weight drift out of step.',
-        'Circle area is probability; colour is the phase of the amplitude. Corners at the same distance from the start share a phase, (−i)^k.'],
-      classical: ['Each bar is one Walsh coefficient of the distribution, relative to the constant mode. It decays as e^(−2|s|t); a negative bar means the mode flips sign at the start corner.',
-        'Circle area is probability. The dashed ring marks the start corner.'],
-    },
-    tree: {
-      pos: 'Positions: leaves', modes: 'Frequencies: Haar wavelets',
-      posAria: 'Binary tree with three levels and probabilities on its eight leaves', modesAria: 'Haar wavelet coefficients of the current state',
-      k: ['P(start leaf)', 'P(sibling)', 'P(other half)'],
-      quantum: ['Each dial is one Haar wavelet of the amplitude. It rotates at speed n − 2m with its level m, the same speeds as on the cube. Empty dials are wavelets that do not touch the start leaf.',
-        'Circle area is probability; colour is the phase of the amplitude. The other half of the tree never gets more than 1/4 in total.'],
-      classical: ['Each bar is one Haar wavelet times its value at the start leaf (+1, −1 or 0). It decays as e^(−2mt) with its level m. Only one wavelet per level touches the start leaf.',
-        'Circle area is probability. The dashed ring marks the start leaf.'],
-    },
-  };
-  function drawLab() {
-    const tree = A.stage === 'tree', q = A.mode === 'quantum';
-    const st = tree ? treeState() : cubeState();
-    if (tree) drawTreePanels(st, q); else drawCubePanels(st, q);
-    const T = LAB_TEXT[A.stage];
-    document.getElementById('posLabel').textContent = T.pos;
-    document.getElementById('modeLabel').textContent = T.modes;
-    cubeSvg.setAttribute('aria-label', T.posAria);
-    modeSvg.setAttribute('aria-label', T.modesAria);
-    T.k.forEach((s, i) => { document.getElementById(`roK${i + 1}`).textContent = s; });
+    // labels & readouts
     document.getElementById('cubeTimeLabel').textContent = q ? 'β' : 't';
     document.getElementById('cubeTimeOut').textContent = q ? `${st.param.toFixed(3)} (${(st.param / Math.PI).toFixed(3)}π)` : st.param.toFixed(3);
-    let ro;
-    if (tree) {
-      let far = 0;
-      for (let x = 0; x < 8; x++) if (treeDist(A.start, x, 3) === 3) far += st.P[x];
-      ro = [st.P[A.start], st.P[A.start ^ 4], far];
-    } else {
-      ro = [st.flip, st.P[A.start], st.P[A.start ^ 7]];
-    }
-    ['roFlip', 'roStart', 'roOpp'].forEach((id, i) => { document.getElementById(id).textContent = ro[i].toFixed(3); });
-    const [modeCap, colorNote] = q ? T.quantum : T.classical;
-    document.getElementById('modeCaption').textContent = modeCap;
-    document.getElementById('cubeColorNote').textContent = colorNote;
+    document.getElementById('roFlip').textContent = st.flip.toFixed(3);
+    document.getElementById('roStart').textContent = st.P[A.start].toFixed(3);
+    document.getElementById('roOpp').textContent = st.P[A.start ^ 7].toFixed(3);
+    document.getElementById('modeCaption').textContent = q
+      ? 'Each dial is one Walsh mode of the amplitude. Its length never changes; it rotates at speed n − 2|s|, so modes of different weight drift out of step.'
+      : 'Each bar is one Walsh coefficient of the distribution, relative to the constant mode. It decays as e^(−2|s|t); a negative bar means the mode flips sign at the start corner.';
+    document.getElementById('cubeColorNote').textContent = q
+      ? 'Circle area is probability; colour is the phase of the amplitude. Corners at the same distance from the start share a phase, (−i)^k.'
+      : 'Circle area is probability. The dashed ring marks the start corner.';
   }
-  function renderA() { A.u = cubeTime.value / 1000; drawLab(); }
+  function renderA() { A.u = cubeTime.value / 1000; drawCube(); }
   cubeTime.addEventListener('input', renderA);
   const setMode = (m) => {
     A.mode = m;
@@ -1464,14 +985,6 @@ $$</p>
   };
   document.getElementById('modeC').addEventListener('click', () => setMode('classical'));
   document.getElementById('modeQ').addEventListener('click', () => setMode('quantum'));
-  const setStage = (s) => {
-    A.stage = s;
-    document.getElementById('stageCube').setAttribute('aria-pressed', s === 'cube');
-    document.getElementById('stageTree').setAttribute('aria-pressed', s === 'tree');
-    renderA();
-  };
-  document.getElementById('stageCube').addEventListener('click', () => setStage('cube'));
-  document.getElementById('stageTree').addEventListener('click', () => setStage('tree'));
   const playBtn = document.getElementById('cubePlay');
   let rafId = null, lastT = 0;
   const step = (ts) => {
@@ -1489,14 +1002,12 @@ $$</p>
     rafId = requestAnimationFrame(step);
   });
 
-  /* ---------- part 7: QAOA depth 1 on the prism, with the cube or the tree as the stage ---------- */
+  /* ---------- part 7: QAOA depth 1 on the prism ---------- */
   const n = 6, N = 1 << n;
   const edges = [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [0, 3], [1, 4], [2, 5]];
-  // W[s] = |s| is the cube level of the Walsh mode s; BL[s], the position of the last 1 in s, is its tree level.
-  const C = new Float64Array(N), W = new Int32Array(N), BL = new Int32Array(N);
+  const C = new Float64Array(N), W = new Int32Array(N);
   for (let x = 0; x < N; x++) {
     W[x] = pc(x);
-    BL[x] = x ? 32 - Math.clz32(x) : 0;
     for (const [i, j] of edges) if (((x >> i) & 1) !== ((x >> j) & 1)) C[x]++;
   }
   let Cmax = 0; for (let x = 0; x < N; x++) Cmax = Math.max(Cmax, C[x]);
@@ -1510,15 +1021,14 @@ $$</p>
   }
   const re = new Float64Array(N), im = new Float64Array(N);
   // One QAOA layer as a split-step Fourier step: cost phase, WHT, mixer phase, WHT back.
-  // The Walsh modes diagonalize both stages; mode s rotates with n - 2 level[s], where level is |s| or the tree level.
-  function simulate(g, b, detail, level) {
+  function simulate(g, b, detail) {
     const a0 = 1 / Math.sqrt(N);
     for (let x = 0; x < N; x++) { const ang = -g * C[x]; re[x] = a0 * Math.cos(ang); im[x] = a0 * Math.sin(ang); }
     fwht(re); fwht(im);
     let spec = null;
-    if (detail) { spec = new Float64Array(n + 1); for (let s = 0; s < N; s++) spec[level[s]] += (re[s] * re[s] + im[s] * im[s]) / N; }
+    if (detail) { spec = new Float64Array(n + 1); for (let s = 0; s < N; s++) spec[W[s]] += (re[s] * re[s] + im[s] * im[s]) / N; }
     for (let s = 0; s < N; s++) {
-      const ang = -b * (n - 2 * level[s]), c = Math.cos(ang), sn = Math.sin(ang);
+      const ang = -b * (n - 2 * W[s]), c = Math.cos(ang), sn = Math.sin(ang);
       const r = re[s], i = im[s];
       re[s] = r * c - i * sn; im[s] = r * sn + i * c;
     }
@@ -1533,38 +1043,31 @@ $$</p>
     return detail ? { E, P, spec } : E;
   }
 
-  const GX = 120, GY = 80, GMAX = Math.PI;
-  // On the tree the mixer phases repeat only after beta = pi, on the cube already after pi/2.
-  const LAND = {
-    cube: { level: W, bmax: Math.PI / 2, ticks: ['0', 'π/8', 'π/4', '3π/8', 'π/2'], spec: 'Walsh weight by |s|',
-      specAria: 'Fourier weight of the state grouped by Hamming weight of the frequency' },
-    tree: { level: BL, bmax: Math.PI, ticks: ['0', 'π/4', 'π/2', '3π/4', 'π'], spec: 'Weight by tree level',
-      specAria: 'Weight of the state on each level of the tree' },
-  };
-  for (const L of Object.values(LAND)) {
-    const grid = new Float64Array(GX * GY);
-    let gmin = Infinity, gmaxv = -Infinity, best = { g: 0, b: 0, E: -Infinity };
-    for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
-      const g = (i + 0.5) / GX * GMAX, b = (j + 0.5) / GY * L.bmax;
-      const E = simulate(g, b, false, L.level);
-      grid[j * GX + i] = E;
-      if (E < gmin) gmin = E;
-      if (E > gmaxv) gmaxv = E;
-    }
-    // refine the best point on a finer local grid
+  const GX = 120, GY = 80, GMAX = Math.PI, BMAX = Math.PI / 2;
+  const grid = new Float64Array(GX * GY);
+  let gmin = Infinity, gmaxv = -Infinity, best = { g: 0, b: 0, E: -Infinity };
+  for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
+    const g = (i + 0.5) / GX * GMAX, b = (j + 0.5) / GY * BMAX;
+    const E = simulate(g, b, false);
+    grid[j * GX + i] = E;
+    if (E < gmin) gmin = E;
+    if (E > gmaxv) gmaxv = E;
+  }
+  // refine the best point on a finer local grid
+  {
     let bi = 0; for (let k = 1; k < grid.length; k++) if (grid[k] > grid[bi]) bi = k;
-    const g0 = ((bi % GX) + 0.5) / GX * GMAX, b0 = (Math.floor(bi / GX) + 0.5) / GY * L.bmax;
+    const g0 = ((bi % GX) + 0.5) / GX * GMAX, b0 = (Math.floor(bi / GX) + 0.5) / GY * BMAX;
     for (let a = -20; a <= 20; a++) for (let c = -20; c <= 20; c++) {
-      const g = g0 + a * GMAX / GX / 20, b = b0 + c * L.bmax / GY / 20;
-      if (g < 0 || g > GMAX || b < 0 || b > L.bmax) continue;
-      const E = simulate(g, b, false, L.level);
+      const g = g0 + a * GMAX / GX / 20, b = b0 + c * BMAX / GY / 20;
+      if (g < 0 || g > GMAX || b < 0 || b > BMAX) continue;
+      const E = simulate(g, b, false);
       if (E > best.E) best = { g, b, E };
     }
-    Object.assign(L, { grid, gmin, gmaxv, best });
   }
-  let land = LAND.cube;
+  document.getElementById('heatMin').textContent = gmin.toFixed(2);
+  document.getElementById('heatMax').textContent = gmaxv.toFixed(2);
 
-  const B = { g: land.best.g, b: land.best.b };
+  const B = { g: best.g, b: best.b };
   const heat = document.getElementById('heat');
   const gS = document.getElementById('gSlider'), bS = document.getElementById('bSlider');
   const PAD = { l: 50, r: 12, t: 10, b: 40 };
@@ -1578,7 +1081,6 @@ $$</p>
     const lo = hex(cssVar('--heat-lo')), mid = hex(cssVar('--heat-mid')), hi = hex(cssVar('--heat-hi'));
     const ink = cssVar('--ink'), muted = cssVar('--muted'), rule = cssVar('--rule'), panel = cssVar('--panel');
     const pw = w - PAD.l - PAD.r, ph = h - PAD.t - PAD.b;
-    const { grid, gmin, gmaxv, bmax, ticks } = land;
     ctx.clearRect(0, 0, w, h);
     const cw = pw / GX, ch = ph / GY;
     for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
@@ -1596,7 +1098,7 @@ $$</p>
       ctx.fillText(lab, x, PAD.t + ph + 6);
     });
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    ticks.forEach((lab, k) => {
+    ['0', 'π/8', 'π/4', '3π/8', 'π/2'].forEach((lab, k) => {
       const y = PAD.t + ph - ph * k / 4;
       ctx.fillText(lab, PAD.l - 6, y);
     });
@@ -1606,7 +1108,7 @@ $$</p>
     ctx.fillText('γ', PAD.l + pw / 2, h - 4);
     ctx.save(); ctx.translate(13, PAD.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('β', 0, 4); ctx.restore();
     // marker
-    const mx = PAD.l + B.g / GMAX * pw, my = PAD.t + ph - B.b / bmax * ph;
+    const mx = PAD.l + B.g / GMAX * pw, my = PAD.t + ph - B.b / BMAX * ph;
     ctx.lineWidth = 3; ctx.strokeStyle = panel;
     ctx.beginPath(); ctx.arc(mx, my, 7, 0, 2 * Math.PI); ctx.stroke();
     ctx.lineWidth = 1.6; ctx.strokeStyle = ink;
@@ -1614,7 +1116,7 @@ $$</p>
   }
   const graphPos = [[110, 18], [192, 160], [28, 160], [110, 72], [150, 136], [70, 136]];
   function drawB() {
-    const r = simulate(B.g, B.b, true, land.level);
+    const r = simulate(B.g, B.b, true);
     let mode = 0; for (let x = 1; x < N; x++) if (r.P[x] > r.P[mode]) mode = x;
     let popt = 0; for (let x = 0; x < N; x++) if (C[x] === Cmax) popt += r.P[x];
     document.getElementById('roE').textContent = r.E.toFixed(3);
@@ -1631,7 +1133,7 @@ $$</p>
     }
     graphPos.forEach(([x, y], i) => {
       el('circle', { cx: x, cy: y, r: 12, class: (mode >> i) & 1 ? 'gv1' : 'gv0' }, gs);
-      txt(gs, x, y + 4, String(i + 1), 'gvl');
+      const t = txt(gs, x, y + 4, String(i + 1), 'gvl');
     });
     // histogram
     const hs = document.getElementById('histSvg'); hs.textContent = '';
@@ -1647,7 +1149,7 @@ $$</p>
       txt(hs, x0 + c * bw + bw / 2, base + 14, String(c), 'lbl');
     }
     txt(hs, 214, 10, `max ${top.toFixed(2)}`, 'lbl', 'end');
-    // spectrum, grouped by the level of the current stage
+    // spectrum
     const ss = document.getElementById('specSvg'); ss.textContent = '';
     const sw = (210 - x0) / (n + 1);
     el('line', { x1: x0 - 4, x2: 214, y1: base, y2: base, class: 'base' }, ss);
@@ -1661,52 +1163,38 @@ $$</p>
   }
   function setB(g, b, fromSlider) {
     B.g = Math.min(GMAX, Math.max(0, g));
-    B.b = Math.min(land.bmax, Math.max(0, b));
-    if (!fromSlider) { gS.value = Math.round(B.g / GMAX * 1000); bS.value = Math.round(B.b / land.bmax * 1000); }
+    B.b = Math.min(BMAX, Math.max(0, b));
+    if (!fromSlider) { gS.value = Math.round(B.g / GMAX * 1000); bS.value = Math.round(B.b / BMAX * 1000); }
     drawB();
   }
   gS.addEventListener('input', () => setB(gS.value / 1000 * GMAX, B.b, true));
-  bS.addEventListener('input', () => setB(B.g, bS.value / 1000 * land.bmax, true));
-  document.getElementById('bestBtn').addEventListener('click', () => setB(land.best.g, land.best.b));
+  bS.addEventListener('input', () => setB(B.g, bS.value / 1000 * BMAX, true));
+  document.getElementById('bestBtn').addEventListener('click', () => setB(best.g, best.b));
   const pick = (e) => {
     const r = heat.getBoundingClientRect();
     const pw = r.width - PAD.l - PAD.r, ph = r.height - PAD.t - PAD.b;
     const g = (e.clientX - r.left - PAD.l) / pw * GMAX;
-    const b = (r.height - PAD.b - (e.clientY - r.top)) / ph * land.bmax;
+    const b = (r.height - PAD.b - (e.clientY - r.top)) / ph * BMAX;
     setB(g, b);
   };
   heat.addEventListener('pointerdown', (e) => { heat.setPointerCapture(e.pointerId); pick(e); });
   heat.addEventListener('pointermove', (e) => { if (e.buttons & 1) pick(e); });
   heat.addEventListener('keydown', (e) => {
-    const dg = GMAX / 100, db = land.bmax / 100;
+    const dg = GMAX / 100, db = BMAX / 100;
     const moves = { ArrowLeft: [-dg, 0], ArrowRight: [dg, 0], ArrowUp: [0, db], ArrowDown: [0, -db] };
     if (moves[e.key]) { e.preventDefault(); setB(B.g + moves[e.key][0], B.b + moves[e.key][1]); }
   });
-  const setLand = (name) => {
-    land = LAND[name];
-    document.getElementById('landCube').setAttribute('aria-pressed', name === 'cube');
-    document.getElementById('landTree').setAttribute('aria-pressed', name === 'tree');
-    document.getElementById('specLabel').textContent = land.spec;
-    document.getElementById('specSvg').setAttribute('aria-label', land.specAria);
-    document.getElementById('heatMin').textContent = land.gmin.toFixed(2);
-    document.getElementById('heatMax').textContent = land.gmaxv.toFixed(2);
-    setB(land.best.g, land.best.b);
-  };
-  document.getElementById('landCube').addEventListener('click', () => setLand('cube'));
-  document.getElementById('landTree').addEventListener('click', () => setLand('tree'));
 
   /* ---------- init and theme/resize handling ---------- */
-  function redrawCanvases() { drawWalsh16(); drawHaar16(); drawHeat(); }
+  function redrawCanvases() { drawWalsh16(); drawHeat(); }
   renderA();
-  setLand('cube');
+  setB(best.g, best.b);
   drawWalsh16();
-  drawHaar16();
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawCanvases); } catch (e) {}
   new MutationObserver(redrawCanvases).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
   if ('ResizeObserver' in window) {
     const ro = new ResizeObserver(() => redrawCanvases());
     ro.observe(walsh16); ro.observe(heat);
-    if (haar16) ro.observe(haar16);
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawCanvases);
 })();

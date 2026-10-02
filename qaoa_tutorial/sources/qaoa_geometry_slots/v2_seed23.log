@@ -1,0 +1,23 @@
+adjoint gradient checked against finite differences
+maxcut  cube      p=1: <C>   5.9392  P(opt) 0.4008  hits 1787/2000
+maxcut  cube      p=2: <C>   6.6029  P(opt) 0.7209  hits 6742/20002
+maxcut  cube      p=3: <C>   6.8780  P(opt) 0.9233  hits 3261/20003
+maxcut  cube      p=4: <C>   6.9903  P(opt) 0.9963  hits 1208/20004
+maxcut  tree      p=1: <C>   5.6315  P(opt) 0.2997  hits 232/2000
+maxcut  tree      p=2: <C>   6.2127  P(opt) 0.4806  hits 199/20002
+maxcut  tree      p=3: <C>   6.5379  P(opt) 0.6559  hits 16/20003
+maxcut  tree      p=4: <C>   6.7143  P(opt) 0.8276  hits 3/20004
+maxcut  ring      p=1: <C>   5.3428  P(opt) 0.2669  hits 1/2000
+maxcut  ring      p=2: <C>   5.7180  P(opt) 0.3038  hits 1/20002
+maxcut  ring      p=3: <C>   5.9411  P(opt) 0.5715  hits 1/20003
+maxcut  ring      p=4: <C>   6.2149  P(opt) 0.5903  hits 1/20004
+maxcut  complete  p=1: <C>   5.5883  P(opt) 0.2719  hits 1952/2000
+maxcut  complete  p=2: <C>   6.2291  P(opt) 0.4217  hits 2050/20002
+maxcut  complete  p=3: <C>   6.5870  P(opt) 0.6404  hits 357/20003
+maxcut  complete  p=4: <C>   6.9704  P(opt) 0.9886  hits 169/20004
+maxcut  slice     p=1: <C>   6.4350  P(opt) 0.7636  hits 2000/2000
+maxcut  slice     p=2: <C>   7.0000  P(opt) 1.0000  hits 12571/20002
+maxcut  slice     p=3: <C>   7.0000  P(opt) 1.0000  hits 18716/20003
+maxcut  slice     p=4: <C>   7.0000  P(opt) 1.0000  hits 19864/20004
+number  cube      p=1: <C>  -9.4833  P(opt) 0.0360  hits 60/2000
+number  cube      p=2: <C>  -6.0036  P(opt) 0.0610  hits 11/20002
