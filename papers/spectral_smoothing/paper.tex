@@ -75,7 +75,7 @@ This paper works through that example from the point of view of someone trained 
 \Cref{sec:experiments} supports each claim numerically. All code is in the accompanying repository.
 
 \paragraph{Related work.}
-Kernel smoothing of binary data goes back to Aitchison and Aitken~\cite{aitchison1976binary}, whose kernel $\lambda^{n-d}(1-\lambda)^d$ is exactly the bit-flip channel of \cref{sec:p2}. Orthogonal-series (Walsh) density estimation for binary data goes back to Ott and Kronmal~\cite{ott1976binary}. Diffusion kernels $e^{-tL}$ on graphs, including the hypercube, were introduced by Kondor and Lafferty~\cite{kondor2002diffusion}. Smola and Kondor~\cite{smola2003kernels} studied the regularised Laplacian $(I+\sigma^2L)^{-1}$ as a kernel, and Zhou et al.~\cite{zhou2004consistency} derived the same resolvent as the closed-form solution of a graph-smoothing objective. Graph signal processing~\cite{shuman2013graphsp} provides the transform--filter--invert template we arrive at in \cref{sec:p2}. Fourier analysis on the Boolean cube is covered in~\cite{odonnell2014boolean}. Krawtchouk polynomials, which govern isotropic filters, are classical in coding theory~\cite{macwilliams1977codes}. Isotropic filters on $\B$ form the Bose--Mesner algebra of the binary Hamming scheme, whose eigenvalues are Krawtchouk polynomials~\cite{delsarte1973algebraic}; \cref{thm:isotropic} restates the description of its stochastic elements in that setting. On the quantum side, our discussion relies on Born machines~\cite{liu2018qcbm,benedetti2019generative}, IQP circuits~\cite{shepherd2009iqp,bremner2011iqp,recio2025train} and the dequantisation literature~\cite{tang2019recommendation}. The mathematical tools in \cref{sec:p2,sec:filters} are therefore standard. Our contribution is to assemble them into an analysis of the motivating example of~\cite{belis2026spectral}. As far as we know, the following are new: the resulting reduction of positivity-preserving spectral smoothing to noise sampling, with its consequences for the quantum argument (\cref{sec:quantum}); the finite-support result for the penalised likelihood (\cref{prop:support}); the learned isotropic filter as a classical baseline, together with its behaviour on constrained data (\cref{sec:exp-gen}); and the step-size-clock observation.
+Kernel smoothing of binary data goes back to Aitchison and Aitken~\cite{aitchison1976binary}, whose kernel $\lambda^{n-d}(1-\lambda)^d$ is exactly the bit-flip channel of \cref{sec:p2}. Orthogonal-series (Walsh) density estimation for binary data goes back to Ott and Kronmal~\cite{ott1976binary}. Diffusion kernels $e^{-tL}$ on graphs, including the hypercube, were introduced by Kondor and Lafferty~\cite{kondor2002diffusion}. Smola and Kondor~\cite{smola2003kernels} studied the regularised Laplacian $(I+\sigma^2\tilde L)^{-1}$ of the normalised Laplacian $\tilde L$ as a kernel, and Zhou et al.~\cite{zhou2004consistency} obtained a resolvent of the same kind as the closed-form solution of a graph-smoothing objective. On the $n$-regular graph $Q_n$ we have $\tilde L=L/n$, so both coincide with the resolvent studied here, up to rescaling $\mu$. Graph signal processing~\cite{shuman2013graphsp} provides the transform--filter--invert template we arrive at in \cref{sec:p2}. Fourier analysis on the Boolean cube is covered in~\cite{odonnell2014boolean}. Krawtchouk polynomials, which govern isotropic filters, are classical in coding theory~\cite{macwilliams1977codes}. Isotropic filters on $\B$ form the Bose--Mesner algebra of the binary Hamming scheme, whose eigenvalues are Krawtchouk polynomials~\cite{delsarte1973algebraic}; \cref{thm:isotropic} restates the description of its stochastic elements in that setting. On the quantum side, our discussion relies on Born machines~\cite{liu2018qcbm,benedetti2019generative}, IQP circuits~\cite{shepherd2009iqp,bremner2011iqp,recio2025train} and the dequantisation literature~\cite{tang2019recommendation}. The mathematical tools in \cref{sec:p2,sec:filters} are therefore standard. Our contribution is to assemble them into an analysis of the motivating example of~\cite{belis2026spectral}. As far as we know, the following are new: the resulting reduction of positivity-preserving spectral smoothing to noise sampling, with its consequences for the quantum argument (\cref{sec:quantum}); the finite-support result for the penalised likelihood (\cref{prop:support}); the learned isotropic filter as a classical baseline, together with its behaviour on constrained data (\cref{sec:exp-gen}); and the step-size-clock observation.
 
 % ------------------------------------------------------------------------------
 \section{Setting: smooth distributions on the hypercube}
@@ -102,7 +102,7 @@ p^\top L p=\tfrac12\textstyle\sum_{x,y}A_{xy}(p_x-p_y)^2 .
 \end{equation}
 For $S\subseteq[n]$ let $\chi_S(x)=(-1)^{\sum_{i\in S}x_i}$ be the Walsh characters, and let $\wh f(S)=\sum_x f(x)\chi_S(x)$ be the (unnormalised) Walsh--Hadamard transform. Its inverse is $f=2^{-n}\sum_S \wh f(S)\chi_S$, and Parseval reads $\sum_x f(x)^2=2^{-n}\sum_S\wh f(S)^2$.
 
-\begin{lemma}[Walsh diagonalisation]\label{lem:walsh}
+\begin{lemma}[Walsh diagonalisation]\label[lemma]{lem:walsh}
 $L\chi_S = 2|S|\,\chi_S$. Hence $H^{\otimes n}/2^{n/2}$, with $H=\bigl(\begin{smallmatrix}1&1\\1&-1\end{smallmatrix}\bigr)$ the unnormalised Hadamard matrix, is an orthonormal eigenbasis of $L$, and
 \[
 \E(p)=2^{2-2n}\sum_{S}|S|\,\wh p(S)^2 .
@@ -153,7 +153,7 @@ Keep an active set $S_t$, initialised to the observed strings, and represent $p$
 \begin{algorithmic}[1]
 \State $S\gets\{x:c_x>0\}$, \; $p\gets\hp$, \; $r\gets 1$
 \For{$t=1,\dots,T$}
-  \State $x_t\gets\argmin_{x\in S\cup N(S)}\nabla f(p)_x$; \; $S\gets S\cup\{x_t\}$ \Comment{support discovery}
+  \State $x_t\gets\argmin_{x\in C}\nabla f(p)_x$, \ $C=S\cup\{x\oplus e_i:x\in S\}$; \; $S\gets S\cup\{x_t\}$ \Comment{support discovery}
   \For{$j=1,\dots,R$} \Comment{correction on $\simplex(S)$}
      \State $y\gets\argmin_{x\in S}\nabla f(p)_x$;\; $\gamma\gets 2/(2+r)$;\; $p\gets(1-\gamma)p+\gamma e_y$;\; $r\gets r+1$
   \EndFor
@@ -165,7 +165,7 @@ Keep an active set $S_t$, initialised to the observed strings, and represent $p$
 \paragraph{The step-size clock.}
 The first implementation reset the inner counter, setting $r\gets1$ at every outer iteration. Experiments at $n=20$ then showed that changing how a fixed budget $TR$ was split between $T$ and $R$ changed the result, even when the support never changed. The explanation is simple, and it fixes a design rule.
 
-\begin{proposition}[Clock invariance]\label{prop:clock}
+\begin{proposition}[Clock invariance]\label[proposition]{prop:clock}
 Suppose that during a run of \cref{alg:fcfw}, every outer step returns an atom already in $S$ and pruning removes nothing. Then the run with parameters $(T,R)$ produces exactly the same iterate as the run with $(1,TR)$. If instead the inner clock is reset at every outer iteration, the $(T,R)$ run applies the schedule $\gamma=2/3,2/4,\dots,2/(R+2)$ $T$ times, and its iterate generally differs.
 \end{proposition}
 \begin{proof}
@@ -176,26 +176,25 @@ With the reset clock, an idle outer step does not continue the correction. It \e
 
 \subsection{The optimum has finite support}
 
-\begin{proposition}[Support structure of \eqref{eq:p1}]\label{prop:support}
+\begin{proposition}[Support structure of \eqref{eq:p1}]\label[proposition]{prop:support}
 Let $p^\star$ solve \eqref{eq:p1}, and let $\nu=-m+2\mu\,p^{\star\top}Lp^\star$. Then:
 \begin{enumerate}
-\item[(a)] $p^\star_x>0$ for every observed $x$. If $\supp p^\star\neq\B$, then $\nu\le0$.
+\item[(a)] $p^\star_x>0$ for every observed $x$, and $\nu\le-2^{-n}\sum_x c_x/p^\star_x<0$.
 \item[(b)] Every unobserved $x\in\supp p^\star$ satisfies
 $p^\star_x=\frac1n\sum_{y\sim x}p^\star_y-\frac{|\nu|}{2\mu n}$: its value is the neighbour average minus a constant.
 \item[(c)] Every unobserved $x\notin\supp p^\star$ satisfies $\frac1n\sum_{y\sim x}p^\star_y\le\frac{|\nu|}{2\mu n}$.
-\item[(d)] If $\nu<0$, then
-$\displaystyle |\supp p^\star| \;\le\; \frac{1}{|\nu|}\sum_x \frac{c_x}{p^\star_x}.$
+\item[(d)] $\displaystyle |\supp p^\star| \;\le\; \frac{1}{|\nu|}\sum_x \frac{c_x}{p^\star_x}$, with equality if $\supp p^\star=\B$.
 \end{enumerate}
 \end{proposition}
 \begin{proof}
 The KKT conditions on $\simplex$ say that there is a $\nu$ with $\nabla f(p^\star)_x=\nu$ on the support and $\nabla f(p^\star)_x\ge\nu$ off it. Multiplying by $p^\star_x$ and summing gives $\nu=\langle\nabla f(p^\star),p^\star\rangle=-m+2\mu p^{\star\top}Lp^\star$, using $\langle Lp,p\rangle=p^\top Lp$.
-(a) Observed coordinates are positive, or the objective would be infinite. For $x\notin\supp p^\star$, $\nabla f_x=2\mu(Lp^\star)_x=-2\mu\sum_{y\sim x}p^\star_y\le0$, so $\nu\le0$.
+(a) Observed coordinates are positive, or the objective would be infinite. Since $\nabla f(p^\star)_x\ge\nu$ for all $x$, averaging over the uniform distribution $u$ gives $\nu\le\langle\nabla f(p^\star),u\rangle=-2^{-n}\sum_x c_x/p^\star_x+2^{1-n}\mu\,\mathbf 1^\top Lp^\star=-2^{-n}\sum_x c_x/p^\star_x$, because $\mathbf 1^\top L=0$.
 (b) and (c) are the two KKT cases for unobserved $x$, since there $\nabla f_x=2\mu(Lp^\star)_x$.
-(d) Because $\mathbf 1^\top L=0$, we have $\sum_x(Lp^\star)_x=0$. Off the support each term is $\le0$, so $\sum_{x\in\supp}(Lp^\star)_x\ge0$. On the support, $2\mu(Lp^\star)_x=\nu+c_x/p^\star_x$. Summing gives $|\supp p^\star|\,\nu+\sum_x c_x/p^\star_x\ge0$.
+(d) Because $\mathbf 1^\top L=0$, we have $\sum_x(Lp^\star)_x=0$. Off the support each term is $\le0$, so $\sum_{x\in\supp}(Lp^\star)_x\ge0$. On the support, $2\mu(Lp^\star)_x=\nu+c_x/p^\star_x$. Summing gives $|\supp p^\star|\,\nu+\sum_x c_x/p^\star_x\ge0$, with equality when there is no off-support term.
 \end{proof}
 
 \noindent
-\textbf{Interpretation.} Off the data, $p^\star$ solves a discrete obstacle problem: it is strictly sub-mean-valued, with a constant deficit, and it is cut off where the neighbour average falls below a threshold. Mass therefore spreads only a bounded distance from the data. In the regime where the likelihood dominates, $2\mu p^\top Lp\ll m$, we have $|\nu|\approx m$ and $p^\star\approx\hp$. The bound (d) then gives $|\supp p^\star|\lesssim\#\{\text{distinct observed strings}\}$, matching the observation that outer FW steps rarely find new atoms. A side effect is important for density estimation: unobserved strings far from the data get probability exactly zero, so held-out log-likelihood can be $-\infty$. This is one reason to prefer the estimator of the next section.
+\textbf{Interpretation.} Off the data, $p^\star$ solves a discrete obstacle problem: it is strictly sub-mean-valued, with a constant deficit, and it is cut off where the neighbour average falls below a threshold. By (b), every unobserved support point has a neighbour with strictly larger probability. Following such neighbours gives a strictly increasing path inside the support, which must end at an observed string. Hence every support point lies within Hamming distance $|\supp p^\star|$ of the data, and (d) bounds this distance. Heuristically, when the likelihood dominates ($2\mu p^{\star\top} Lp^\star\ll m$) we have $|\nu|\approx m$, and if moreover $p^\star\approx\hp$, the bound (d) gives $|\supp p^\star|\lesssim\#\{\text{distinct observed strings}\}$, matching the observation that outer FW steps rarely find new atoms. A side effect is important for density estimation: unobserved strings far from the data get probability exactly zero, so held-out log-likelihood can be $-\infty$. This is one reason to prefer the estimator of the next section.
 
 % ------------------------------------------------------------------------------
 \section{Smoothing as denoising: the Walsh filter}
@@ -225,8 +224,8 @@ $I+\mu L=(1+\mu n)(I-\alpha P)$ with $\alpha<1$, and $P$ is stochastic, so its s
 
 \Cref{thm:p2} collects known facts. Matrix-analytically, $I+\mu L$ is a non-singular M-matrix, so its inverse is non-negative~\cite{berman1994nonnegative}. Resolvents and heat kernels of graph Laplacians are standard kernels~\cite{kondor2002diffusion,smola2003kernels}. What matters here is the consequence: the constraint in~\eqref{eq:p2} is inactive, and the Neumann series gives a sampler.
 
-\begin{corollary}[Exact classical sampling and density evaluation at any $n$]\label{cor:sampler}
-Sampling from $K_\mu\hp$ takes $O(n)$ time per draw: pick a training string uniformly at random, draw $s\sim\mathrm{Exp}(1)$, and flip each bit independently with probability $\theta(\mu s)$. Alternatively, perform $\mathrm{Geom}(1-\alpha)$ random-walk steps, each flipping one uniformly random bit. The density is $(K_\mu\hp)(x)=\frac1m\sum_j k_\mu(d(x,x^{(j)}))$, where $d$ is Hamming distance and
+\begin{corollary}[Exact classical sampling and density evaluation at any $n$]\label[corollary]{cor:sampler}
+Sampling from $K_\mu\hp$ takes $O(n)$ time per draw: pick a training string uniformly at random, draw $s\sim\mathrm{Exp}(1)$, and flip each bit independently with probability $\theta(\mu s)$. Alternatively, perform $K$ random-walk steps, each flipping one uniformly random bit, where $\Pr[K=k]=(1-\alpha)\alpha^k$; this takes $O(n+\mu n)$ expected time, since $\mathbb E K=\mu n$. The density is $(K_\mu\hp)(x)=\frac1m\sum_j k_\mu(d(x,x^{(j)}))$, where $d$ is Hamming distance and
 \begin{equation}\label{eq:kernel}
 k_\mu(d)=\int_0^\infty e^{-s}\theta(\mu s)^d\bigl(1-\theta(\mu s)\bigr)^{n-d}ds
 =\frac{1}{2\mu}\int_0^1 r^{\frac{1}{2\mu}-1}\Bigl(\tfrac{1-r}{2}\Bigr)^{d}\Bigl(\tfrac{1+r}{2}\Bigr)^{n-d}dr.
@@ -235,7 +234,7 @@ The second integral has a polynomial of degree $n$ against a Jacobi weight, so G
 \end{corollary}
 
 \paragraph{Classical precedents.}
-Each heat kernel $e^{-tL}$ is the Aitchison--Aitken binary kernel~\cite{aitchison1976binary} with $\lambda_{\mathrm{AA}}=1-\theta(t)$. It is also the diffusion kernel on the hypercube~\cite{kondor2002diffusion}. In~\cite{belis2026spectral}'s notation it is the filter $(1-2\theta)^{|S|}$, which they show to be classically samplable (their Sec.~II.5). \Cref{thm:p2} says that the Tikhonov solution of~\eqref{eq:p2} is a scale mixture of these kernels with exponentially distributed diffusion time. It is the regularised-Laplacian kernel of~\cite{smola2003kernels} and inherits all their tractability. Unlike~\eqref{eq:p1}, it has full support, so held-out likelihoods are always finite.
+Each heat kernel $e^{-tL}$ is the Aitchison--Aitken binary kernel~\cite{aitchison1976binary} with $\lambda_{\mathrm{AA}}=1-\theta(t)$. It is also the diffusion kernel on the hypercube~\cite{kondor2002diffusion}. In~\cite{belis2026spectral}'s notation it is the filter $(1-2\theta)^{|S|}$, which they show to be classically samplable (their Sec.~II.5). \Cref{thm:p2} says that the Tikhonov solution of~\eqref{eq:p2} is a scale mixture of these kernels with exponentially distributed diffusion time. Up to the rescaling $\tilde L=L/n$, it is the regularised-Laplacian kernel of~\cite{smola2003kernels}, and it inherits the tractability of its components. Unlike~\eqref{eq:p1}, it has full support, so held-out likelihoods are always finite.
 
 \paragraph{Relation between (P1) and (P2).}
 The two objectives weight the data term very differently. One is a log-likelihood scaling with $m$, the other a squared error scaling with $1/m$. Their $\mu$'s are therefore not comparable. After matching the unobserved mass, the two solutions are close on the $n=3$ example (\cref{fig:n3}). The structural difference is support. The solution of~\eqref{eq:p1} is finitely supported (\cref{prop:support}); that of~\eqref{eq:p2} is fully supported (\cref{thm:p2}).
@@ -244,7 +243,7 @@ The two objectives weight the data term very differently. One is a log-likelihoo
 \section{Which spectral filters define distributions?}
 \label{sec:filters}
 
-The filter in~\eqref{eq:tikhonov-filter} depends on $S$ only through the \emph{level} $|S|$. Call a filter $h:\{0,\dots,n\}\to\R$ \emph{isotropic} and write $F_h$ for the operator $\wh{F_hf}(S)=h(|S|)\wh f(S)$. Belis et al.\ propose filters that ``suppress higher-order Fourier coefficients, but keep the lower-order Fourier coefficients approximately intact''~\cite{belis2026spectral}. When is the result still a probability distribution? Let $K_k(d)=\sum_{j}(-1)^j\binom{d}{j}\binom{n-d}{k-j}$ be the Krawtchouk polynomials~\cite{macwilliams1977codes}. We use two facts: $\sum_{|S|=k}\chi_S(z)=K_k(|z|)$, and $\sum_{|z|=d}\chi_S(z)=K_d(|S|)$.
+The filter in~\eqref{eq:tikhonov-filter} depends on $S$ only through the \emph{level} $|S|$. Call a filter $h:\{0,\dots,n\}\to\R$ \emph{isotropic} and write $F_h$ for the operator $\wh{F_hf}(S)=h(|S|)\wh f(S)$. Belis et al.\ propose ``a (possibly learnable) filter in Fourier space that suppresses higher-order Fourier coefficients, but keeps the lower-order Fourier coefficients approximately intact''~\cite{belis2026spectral}. When is the result still a probability distribution? Let $K_k(d)=\sum_{j}(-1)^j\binom{d}{j}\binom{n-d}{k-j}$ be the Krawtchouk polynomials~\cite{macwilliams1977codes}. We use two facts: $\sum_{|S|=k}\chi_S(z)=K_k(|z|)$, and $\sum_{|z|=d}\chi_S(z)=K_d(|S|)$.
 
 \begin{theorem}[Positive isotropic filters]\label{thm:isotropic}
 For $h:\{0,\dots,n\}\to\R$ the following are equivalent:
@@ -253,7 +252,7 @@ For $h:\{0,\dots,n\}\to\R$ the following are equivalent:
 \item[(b)] $h(0)=1$ and $\kappa_h(d):=2^{-n}\sum_{k=0}^n h(k)K_k(d)\ge0$ for $d=0,\dots,n$.
 \item[(c)] There is a probability vector $w\in\simplex_{n+1}$ with $h(k)=\sum_{d=0}^n w_d\,K_d(k)/\binom nd$. In operator form, $F_h=\sum_d w_d\,U_d$, where $U_d$ flips a uniformly random $d$-subset of bits.
 \end{enumerate}
-In that case $w_d=\binom nd\kappa_h(d)$. Sampling $F_h\hp$ costs $O(n)$ per draw after $O(n^2)$ preprocessing: draw a training string, draw $d\sim w$, and flip $d$ random bits. Evaluating the density costs $O(mn)$.
+In that case $w_d=\binom nd\kappa_h(d)$. Sampling $F_h\hp$ costs $O(n)$ per draw after $O(n^2)$ arithmetic operations of preprocessing: draw a training string, draw $d\sim w$, and flip $d$ random bits. Evaluating the density costs $O(mn)$. (The Krawtchouk sums alternate in sign, so for large $n$ they need extended precision unless $w$ is available directly, as for learned filters or for~\eqref{eq:kernel}.)
 \end{theorem}
 \begin{proof}
 The Walsh transform turns XOR-convolution $(\kappa*f)(x)=\sum_z\kappa(z)f(x\oplus z)$ into multiplication. So $F_hf=\kappa_h*f$, with $\kappa_h=2^{-n}\sum_S h(|S|)\chi_S$, which is the radial function in (b). (a)$\Rightarrow$(b): $F_h e_0=\kappa_h\in\simplex$, so $\kappa_h\ge0$ and $1=\sum_z\kappa_h(z)=\wh{\kappa_h}(\emptyset)=h(0)$. (b)$\Rightarrow$(a): convolution with a probability distribution preserves $\simplex$. (b)$\Leftrightarrow$(c): $\kappa_h$ is radial, so it is the mixture $\sum_d w_d u_d$ of uniform distributions $u_d$ on Hamming spheres, with $w_d=\binom nd\kappa_h(d)$. Moreover $\wh{u_d}(S)=K_d(|S|)/\binom nd$.
@@ -264,27 +263,27 @@ The Walsh transform turns XOR-convolution $(\kappa*f)(x)=\sum_z\kappa(z)f(x\oplu
 \[
 \kappa_h(n)=2^{-n}\sum_{k\le b}(-1)^k\binom nk=2^{-n}(-1)^b\binom{n-1}{b}<0\qquad\text{for odd }b<n .
 \]
-Numerically the same holds for even $b$; at $n=20$, $b=2$ the most negative shell weight is $-1.59$. Band-limiting $30$ samples at $n=10$, $b=2$ produces on average $15\%$ negative mass (\cref{sec:exp-filters}). More surprisingly, the smooth, monotone, rapidly decaying \emph{Gaussian} filter $e^{-k^2/8}$ is also not positive. Being ``low-pass'' therefore does not make a filter a valid smoother of distributions; positivity is a genuinely global constraint.
+For even $b$ we verified negativity in exact integer arithmetic for every $1\le b\le n-1$ with $n\le40$; at $n=20$, $b=2$ the most negative shell weight is $-1.59$. (The cases $b=0$, projection onto the uniform distribution, and $b=n$, the identity, are trivially positive.) Band-limiting $30$ samples at $n=10$, $b=2$ produces on average $15\%$ negative mass (\cref{sec:exp-filters}). More surprisingly, the smooth, monotone, rapidly decaying \emph{Gaussian} filter $e^{-k^2/8}$ is also not positive. Being ``low-pass'' therefore does not make a filter a valid smoother of distributions; positivity is a genuinely global constraint.
 
 \paragraph{Learnable filters are classical too.}
 By (c), the set of positive isotropic filters is a simplex with $n+1$ vertices. A filter can therefore be \emph{learned} by maximising the leave-one-out likelihood
 \[
 \ell(w)=\sum_{j=1}^m\log\Bigl(\sum_d w_d\,a_{jd}\Bigr),\qquad a_{jd}=\frac{\#\{i\neq j:d(x^{(i)},x^{(j)})=d\}}{(m-1)\binom nd},
 \]
-which is concave in $w$. EM~\cite{dempster1977em} converges to the global optimum with updates
+which is concave in $w$. The EM iteration for mixture weights~\cite{dempster1977em},
 \[
 w_d\leftarrow \frac{w_d}{m}\sum_{j=1}^m \frac{a_{jd}}{\sum_{d'}w_{d'}a_{jd'}} .
 \]
-The cost is $O(m^2n)$ for the pairwise distances and $O(mn)$ per iteration, independent of $2^n$. The ``(possibly learnable) filter'' of~\cite{belis2026spectral} is, within the isotropic positive class, a convex mixture-weight problem.
+is exactly Cover's algorithm for log-optimal portfolios, which increases $\ell$ monotonically and converges to a global maximiser from any strictly positive start~\cite{cover1984algorithm}. The cost is $O(m^2n)$ for the pairwise distances and $O(mn)$ per iteration, independent of $2^n$. The ``(possibly learnable) filter'' of~\cite{belis2026spectral} is, within the isotropic positive class, a convex mixture-weight problem.
 
 \paragraph{Non-isotropic filters.}
 The convolution argument does not use isotropy.
 
-\begin{proposition}[Positive filters are noise channels]\label{prop:general}
+\begin{proposition}[Positive filters are noise channels]\label[proposition]{prop:general}
 Let $h:2^{[n]}\to\R$ and $\wh{F_hf}=h\cdot\wh f$. Then $F_h$ maps $\simplex$ into $\simplex$ if and only if $\kappa_h=2^{-n}\sum_S h(S)\chi_S$ is a probability distribution. In that case $F_h\hp$ is the law of $x\oplus z$ with $x\sim\hp$ and $z\sim\kappa_h$ independent, and $h(S)=\mathbb E_{z\sim\kappa_h}[\chi_S(z)]$ are the expected parities of the noise.
 \end{proposition}
 
-The proof is the convolution theorem on $\mathbb{Z}_2^n$ applied to the point mass, as in \cref{thm:isotropic}. In the language of harmonic analysis, $h$ must be the Fourier transform of a probability measure, the finite-group case of Bochner's theorem~\cite{rudin1962fourier}. So \emph{probability-level spectral smoothing is exactly additive noise}. The filter is the characteristic function of the noise, and sampling from the smoothed model costs one training-set lookup plus one noise sample. Product filters $h(S)=\prod_{i\in S}\rho_i$ correspond to independent per-bit flips with rates $(1-\rho_i)/2$; mixtures of positive filters correspond to mixtures of noises; and so on.
+The proof is the convolution theorem on $\mathbb{Z}_2^n$ applied to the point mass, as in \cref{thm:isotropic}. In the language of harmonic analysis, $h$ must be the Fourier transform of a probability measure on $\mathbb{Z}_2^n$. By the finite-group case of Bochner's theorem~\cite{rudin1962fourier}, this holds exactly when $h(\emptyset)=1$ and $h$ is positive definite, i.e.\ the matrix $[h(S\triangle T)]_{S,T}$ is positive semidefinite. So \emph{probability-level spectral smoothing is exactly additive noise}. The filter is the characteristic function of the noise, and sampling from the smoothed model costs one training-set lookup plus one noise sample. Product filters $h(S)=\prod_{i\in S}\rho_i$ with $\rho_i\in[-1,1]$ correspond to independent per-bit flips with rates $(1-\rho_i)/2$; mixtures of positive filters correspond to mixtures of noises; and so on.
 
 % ------------------------------------------------------------------------------
 \section{What this means for the quantum argument}
@@ -296,13 +295,13 @@ The proof is the convolution theorem on $\mathbb{Z}_2^n$ applied to the point ma
 \Cref{thm:isotropic} extends the observation of~\cite{belis2026spectral} (Sec.~II.5) from the noise filter to \emph{every} isotropic filter that defines a distribution, including learned ones: all of them are sampled exactly in $O(n)$ time, and their densities are evaluated in $O(mn)$. In particular, \cref{sec:exp-large} samples the Tikhonov-smoothed distribution at $n=100$.
 
 \paragraph{2. Hardness of positive smoothing equals hardness of sampling noise.}
-For any positive filter, sampling $F_h\hp$ is at most as hard as sampling $\kappa_h$ (one XOR). It is at least as hard when $\X$ is a single string. Consequently a quantum advantage for probability-level smoothing requires a noise distribution $\kappa$ that is hard to sample classically. Natural candidates are output distributions of IQP circuits $H^{\otimes n}DH^{\otimes n}|0\rangle$, which are hard to sample classically under standard conjectures~\cite{shepherd2009iqp,bremner2011iqp}. The corresponding filter is $h(S)=\langle Z_S\rangle$. Results of Van den Nest~\cite{vandennest2011simulating} imply that these expected parities can be estimated classically to additive precision in polynomial time. Recio-Armengol et al.\ use exactly this to train IQP generative models on classical hardware, while sampling from them remains believed hard~\cite{recio2025train}. This gives a simple hybrid model: sample a training string classically, sample $z$ from a parametrised IQP circuit, and output $x\oplus z$. It needs no amplitude encoding of the data and no post-selection, and its filter can be fitted classically through the parities. Footnote~2 of~\cite{belis2026spectral} anticipates learnable IQP phase masks for filtering. Our reduction shows that, for probability-level filters, the IQP circuit can act on noise alone.
+For any positive filter, sampling $F_h\hp$ is at most as hard as sampling $\kappa_h$ (one XOR). It is at least as hard when $\X$ is a single string. Consequently a quantum advantage for probability-level smoothing requires a noise distribution $\kappa$ that is hard to sample classically. Natural candidates are output distributions of IQP circuits $H^{\otimes n}DH^{\otimes n}|0\rangle$, which cannot be sampled exactly classically unless the polynomial hierarchy collapses~\cite{bremner2011iqp}, and are believed hard to sample approximately under further conjectures~\cite{bremner2016average}. IQP circuits were introduced in~\cite{shepherd2009iqp}. The corresponding filter is $h(S)=\langle Z_S\rangle$. Results of Van den Nest~\cite{vandennest2011simulating} imply that these expected parities can be estimated classically to additive precision in polynomial time. Recio-Armengol et al.\ use exactly this to train IQP generative models on classical hardware, while sampling from them remains believed hard~\cite{recio2025train}. This gives a simple hybrid model: sample a training string classically, sample $z$ from a parametrised IQP circuit, and output $x\oplus z$. It needs no amplitude encoding of the data and no post-selection, and its filter can be fitted classically through the parities. Footnote~2 of~\cite{belis2026spectral} anticipates learnable IQP phase masks for filtering. Our reduction shows that, for probability-level filters, the IQP circuit can act on noise alone.
 
 \paragraph{3. The tension: local noise versus hard noise.}
-For the hybrid model to \emph{smooth}, $h(S)$ must decay with $|S|$, which means $\kappa$ must concentrate on low Hamming weight. IQP distributions that are believed hard to sample are typically anticoncentrated, the opposite of local, while near-identity IQP circuits produce local noise that may well be classically tractable. Whether there exist noise distributions that are both low-pass and hard to sample is, we believe, the precise open question behind the empirical-smoothing example. It replaces the less precise question of whether quantum computers can ``design good Fourier filters''.
+For the hybrid model to \emph{smooth}, $h(S)$ must decay with $|S|$, which means $\kappa$ must concentrate on low Hamming weight. The hardness arguments for approximate IQP sampling rely on anticoncentration of the output distribution~\cite{bremner2016average}, which is the opposite of local, while near-identity IQP circuits produce local noise that may well be classically tractable. Whether there exist noise distributions that are both low-pass and hard to sample is, we believe, the precise open question behind the empirical-smoothing example. It replaces the less precise question of whether quantum computers can ``design good Fourier filters''.
 
 \paragraph{4. Non-positive filters and amplitude filters are a different model class.}
-Filters outside the positive class, such as hard band-limiting, do not define distributions, so ``sampling the band-limited empirical distribution'' is not well posed. The quantum construction in~\cite{belis2026spectral} filters \emph{amplitudes} of $|\X|^{-1/2}\sum_{x\in\X}|x\rangle$, and the Born rule then yields a distribution whose Walsh spectrum is an autocorrelation of the filtered amplitude spectrum (their Theorem~1). Such models are always valid distributions, but they are generally not of the form $F_h\hp$ for any positive $h$. They are therefore not a faster implementation of classical spectral smoothing; they are a different, nonlinear family of models. Comparing them to the positive class characterised here, rather than to band-limiting, is the fair benchmark. The learned isotropic filter of \cref{sec:filters} is a strong and cheap classical baseline for that comparison.
+Filters outside the positive class, such as hard band-limiting, do not define distributions, so ``sampling the band-limited empirical distribution'' is not well posed. The quantum construction in~\cite{belis2026spectral} filters \emph{amplitudes} of $|\X|^{-1/2}\sum_{x\in\X}|x\rangle$, and the Born rule then yields a distribution whose Walsh spectrum is an autocorrelation of the filtered amplitude spectrum (their Theorem~1). Such models are always valid distributions, but they are generally not of the form $F_h\hp$ for any positive $h$. If the filter acts on amplitudes as a convolution with some $\gamma$, the model is $p(x)\propto|\sum_{y\in\X}\gamma(x\oplus y)|^2$. This is quadratic in the data and contains cross terms between pairs of training strings, whereas every $F_h\hp$ is linear in $\hp$. They are therefore not a faster implementation of classical spectral smoothing; they are a different, nonlinear family of models. Comparing them to the positive class characterised here, rather than to band-limiting, is the fair benchmark. The learned isotropic filter of \cref{sec:filters} is a strong and cheap classical baseline for that comparison.
 
 % ------------------------------------------------------------------------------
 \section{Experiments}
