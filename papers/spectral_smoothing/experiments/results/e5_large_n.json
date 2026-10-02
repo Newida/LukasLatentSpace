@@ -1,0 +1,11 @@
+{
+  "n": 100,
+  "m": 50,
+  "mu": 0.05,
+  "samples": 200000,
+  "sample_seconds": 0.2350759506225586,
+  "distance_law_tv": 0.0046138921599116695,
+  "law_mass": 1.0,
+  "density_seconds_per_point": 6.490230560302735e-06,
+  "mean_log2_density_random_point": -114.63665854321577
+}

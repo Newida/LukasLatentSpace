@@ -1,0 +1,149 @@
+{
+  "n": 20,
+  "lambda": 50000000.0,
+  "mu": 95.367431640625,
+  "m": 90,
+  "distinct": 55,
+  "fcfw": {
+    "objective": 368.40095139102493,
+    "support": 56,
+    "seconds": 1.0566060543060303
+  },
+  "exact_ball_r1": {
+    "ball_size": 926,
+    "seconds": 12.422642946243286,
+    "solver": {
+      "iterations": 100000,
+      "fw_gap": 2.334701498796221e-07,
+      "objective": 368.39781356599246
+    },
+    "objective": 368.39781356599246,
+    "global_fw_gap": 2.334701498796221e-07,
+    "support": 62,
+    "unobserved_support": 7,
+    "unobserved_mass": 0.00262829526771454,
+    "nu": -14.058463098732048,
+    "support_bound": 294.38291059321676,
+    "max_dist_unobserved_support": 1,
+    "top_probs": [
+      0.06116517342560929,
+      0.05289390001267833,
+      0.05081846787942243
+    ]
+  },
+  "exact_ball_r2": {
+    "ball_size": 7381,
+    "seconds": 42.76347780227661,
+    "solver": {
+      "iterations": 100000,
+      "fw_gap": 2.3347014632690843e-07,
+      "objective": 368.39781356599246
+    },
+    "objective": 368.39781356599246,
+    "global_fw_gap": 2.3347014632690843e-07,
+    "support": 62,
+    "unobserved_support": 7,
+    "unobserved_mass": 0.002628295267714528,
+    "nu": -14.058463098732048,
+    "support_bound": 294.38291059321676,
+    "max_dist_unobserved_support": 1,
+    "top_probs": [
+      0.06116517342560929,
+      0.052893900012678324,
+      0.05081846787942242
+    ]
+  },
+  "l1_fcfw_vs_exact": 0.006403505727567652,
+  "support_equivalence": [
+    {
+      "T": 8,
+      "R": 40,
+      "total_inner": 320,
+      "same_active": true,
+      "support_unchanged": true,
+      "objective_left": 497.12481594227256,
+      "objective_right": 369.3309798213028,
+      "objective_delta": 127.79383612096979,
+      "l1_distance": 0.8542277173415901,
+      "max_abs_distance": 0.03855465803010287,
+      "continuous_clock": false
+    },
+    {
+      "T": 5,
+      "R": 60,
+      "total_inner": 300,
+      "same_active": true,
+      "support_unchanged": true,
+      "objective_left": 395.5979128149754,
+      "objective_right": 369.0739941283222,
+      "objective_delta": 26.52391868665319,
+      "l1_distance": 0.5208030727598896,
+      "max_abs_distance": 0.027286691472849914,
+      "continuous_clock": false
+    },
+    {
+      "T": 8,
+      "R": 40,
+      "total_inner": 320,
+      "same_active": true,
+      "support_unchanged": true,
+      "objective_left": 369.3309798213028,
+      "objective_right": 369.3309798213028,
+      "objective_delta": 0.0,
+      "l1_distance": 0.0,
+      "max_abs_distance": 0.0,
+      "continuous_clock": true
+    },
+    {
+      "T": 5,
+      "R": 60,
+      "total_inner": 300,
+      "same_active": true,
+      "support_unchanged": true,
+      "objective_left": 369.0739941283222,
+      "objective_right": 369.0739941283222,
+      "objective_delta": 0.0,
+      "l1_distance": 0.0,
+      "max_abs_distance": 0.0,
+      "continuous_clock": true
+    }
+  ],
+  "p2_mass_profile": {
+    "0.01": {
+      "min": 1.8547162808672194e-17,
+      "mass_by_distance": [
+        0.8626826226130578,
+        0.11927187833017223,
+        0.01578769350203437,
+        0.001994672448632971,
+        0.00023593466984932372,
+        2.4902420459306725e-05
+      ],
+      "mass_on_observed": 0.8626826226130578
+    },
+    "0.1": {
+      "min": 5.549573089205791e-10,
+      "mass_by_distance": [
+        0.39314198368758696,
+        0.2519857629265889,
+        0.15669182076782812,
+        0.09472562443449888,
+        0.055274985078904514,
+        0.029685650469902982
+      ],
+      "mass_on_observed": 0.39314198368758696
+    },
+    "1.0": {
+      "min": 2.776932249771317e-07,
+      "mass_by_distance": [
+        0.06247508829332633,
+        0.06702157318710601,
+        0.07583894948864117,
+        0.0956341903770072,
+        0.13337450149328905,
+        0.17786734940216667
+      ],
+      "mass_on_observed": 0.06247508829332633
+    }
+  }
+}
