@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use or build on material from this notebook, please cite it as below."
+title: "LukasLatentSpace: A Public Research Notebook on Quantum Computing, AI and Mathematics"
+type: software
+authors:
+  - family-names: Theißinger
+    given-names: Lukas
+    affiliation: University of Bonn
+repository-code: "https://github.com/Newida/LukasLatentSpace"
+url: "https://github.com/Newida/LukasLatentSpace"
+license: MIT
+keywords:
+  - quantum computing
+  - quantum algorithms
+  - artificial intelligence
+  - mathematics
+preferred-citation:
+  type: generic
+  title: "LukasLatentSpace: A Public Research Notebook on Quantum Computing, AI and Mathematics"
+  authors:
+    - family-names: Theißinger
+      given-names: Lukas
+  url: "https://github.com/Newida/LukasLatentSpace"
+  year: 2026

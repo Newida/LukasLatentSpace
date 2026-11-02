@@ -13,3 +13,32 @@ LLMs and other agents are welcome to translate the notebooks in `experiments/` i
 ```
 
 The generated files are written to `experiments_html/`.
+
+## Citation
+
+If a post or experiment from this notebook helped your work, please cite it like a paper.
+For the notebook as a whole:
+
+```bibtex
+@misc{theissinger2026latentspace,
+  author       = {Thei{\ss}inger, Lukas},
+  title        = {{LukasLatentSpace}: A Public Research Notebook on Quantum Computing, {AI} and Mathematics},
+  year         = {2026},
+  howpublished = {\url{https://github.com/Newida/LukasLatentSpace}},
+  note         = {GitHub repository}
+}
+```
+
+For a single post, link to its file and add the date you accessed it:
+
+```bibtex
+@misc{theissinger2026<postname>,
+  author       = {Thei{\ss}inger, Lukas},
+  title        = {<Post title>},
+  year         = {2026},
+  howpublished = {\url{https://github.com/Newida/LukasLatentSpace/blob/main/posts/<PostName>}},
+  note         = {LukasLatentSpace research notebook, accessed <YYYY-MM-DD>}
+}
+```
+
+GitHub also offers a ready-made citation via "Cite this repository" (from `CITATION.cff`).
